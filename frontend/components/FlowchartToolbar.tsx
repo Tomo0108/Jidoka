@@ -1,18 +1,18 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useFlowStore } from '@/hooks/useFlowStore';
-import { Button } from '@/components/ui/button';
+import { useFlowStore } from '../hooks/useFlowStore';
+import { Button } from './ui/button';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
   DropdownMenuTrigger,
   DropdownMenuSeparator
-} from '@/components/ui/dropdown-menu';
+} from './ui/dropdown-menu';
 
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
+import { Separator } from './ui/separator';
+import { useToast } from '../hooks/use-toast';
 import {
   Download,
   Upload,
@@ -23,8 +23,8 @@ import {
   FolderOpen,
   RefreshCw
 } from 'lucide-react';
-import { FlowchartExporter, FlowchartImporter } from '@/lib/exportUtils';
-import { ExportFormat, FlowchartData } from '@/lib/types';
+import { FlowchartExporter, FlowchartImporter } from '../lib/exportUtils';
+import { ExportFormat, FlowchartData } from '../lib/types';
 
 export function FlowchartToolbar() {
   const { toast } = useToast();

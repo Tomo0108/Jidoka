@@ -18,16 +18,16 @@ import ReactFlow, {
   applyEdgeChanges,
 } from 'reactflow';
 // import { SmartEdge } from '@tisoap/react-flow-smart-edge';
-import { Button } from '@/components/ui/button';
+import { Button } from './ui/button';
 
-import { useFlowStore, RFState } from '@/hooks/useFlowStore';
-import { FlowchartToolbar } from '@/components/FlowchartToolbar';
+import { useFlowStore, RFState } from '../hooks/useFlowStore';
+import { FlowchartToolbar } from './FlowchartToolbar';
 
 // Import custom nodes
-import CustomNode from '@/components/CustomNode';
+import CustomNode from './CustomNode';
 
 import 'reactflow/dist/style.css';
-import { NodeShape } from '@/lib/types';
+import { NodeShape } from '../lib/types';
 
 // Define custom node and edge types
 const nodeTypes = {

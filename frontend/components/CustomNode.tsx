@@ -2,8 +2,8 @@
 
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { cn } from '@/lib/utils';
-import { NodeShape } from '@/lib/types';
+import { cn } from '../lib/utils';
+import { NodeShape } from '../lib/types';
 
 interface CustomNodeData {
   label: string;
