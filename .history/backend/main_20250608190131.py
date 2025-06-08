@@ -57,50 +57,6 @@ def create_project(project: Project):
     conn.close()
     return {"id": new_project_id, "name": project.name, "description": project.description}
 
-@app.put("/api/projects/{project_id}")
-def update_project(project_id: int, project: ProjectUpdate):
-    conn = db.get_db_connection()
-    cursor = conn.cursor()
-    
-    # Check if project exists
-    existing_project = cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
-    if not existing_project:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Project not found")
-    
-    # Update project
-    cursor.execute(
-        "UPDATE projects SET name = ?, description = ? WHERE id = ?",
-        (project.name, project.description, project_id)
-    )
-    conn.commit()
-    
-    # Return updated project
-    updated_project = cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
-    conn.close()
-    return dict(updated_project)
-
-@app.delete("/api/projects/{project_id}")
-def delete_project(project_id: int):
-    conn = db.get_db_connection()
-    cursor = conn.cursor()
-    
-    # Check if project exists
-    existing_project = cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
-    if not existing_project:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Project not found")
-    
-    # Delete related messages first
-    cursor.execute("DELETE FROM messages WHERE project_id = ?", (project_id,))
-    
-    # Delete project
-    cursor.execute("DELETE FROM projects WHERE id = ?", (project_id,))
-    conn.commit()
-    conn.close()
-    
-    return {"message": "Project deleted successfully"}
-
 @app.get("/api/projects/{project_id}/messages")
 def get_project_messages(project_id: int):
     conn = db.get_db_connection()
