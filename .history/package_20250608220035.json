@@ -14,8 +14,6 @@
     "install:all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
     "setup": "npm run install:all",
     "lint": "cd frontend && npm run lint",
-    "health": "node scripts/health-check.js",
-    "stop": "echo \"To stop the servers, press Ctrl+C in the terminal where 'npm run dev' is running\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

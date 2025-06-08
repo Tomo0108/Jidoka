@@ -1,0 +1,69 @@
+{
+  "name": "Jido-ka - AI自動化プラットフォーム",
+  "short_name": "Jido-ka",
+  "description": "AIを活用したワークフロー自動化プラットフォーム。フローチャート作成やコード生成を支援します。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "ja",
+  "categories": ["productivity", "business", "developer"],
+  "icons": [
+    {
+      "src": "/img/logo_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/img/logo_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "新しいプロジェクト",
+      "short_name": "新規作成",
+      "description": "新しいプロジェクトを作成",
+      "url": "/?action=new-project",
+      "icons": [
+        {
+          "src": "/img/logo_192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "フローチャート",
+      "short_name": "フロー",
+      "description": "フローチャートエディタを開く",
+      "url": "/?view=flow",
+      "icons": [
+        {
+          "src": "/img/logo_192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/img/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Jido-ka デスクトップ画面"
+    },
+    {
+      "src": "/img/screenshot-mobile.png",
+      "sizes": "640x1136",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Jido-ka モバイル画面"
+    }
+  ]
+} 
