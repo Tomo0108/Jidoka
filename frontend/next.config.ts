@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
 
 export default withPWA({
   dest: "public",
-  disable: true, // 一時的にPWAを完全に無効化
+  disable: process.env.NODE_ENV === 'development', // 開発時のみ無効化
   register: true,
   skipWaiting: true,
   runtimeCaching: [

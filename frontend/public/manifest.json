@@ -1,15 +1,15 @@
 {
-  "name": "Jido-ka - AI自動化プラットフォーム",
+  "name": "Jido-ka - AI Task Automation",
   "short_name": "Jido-ka",
-  "description": "AIを活用したワークフロー自動化プラットフォーム。フローチャート作成やコード生成を支援します。",
+  "description": "AI Agent for Task Automation - チャット、フローチャート、コード生成を統合したタスク自動化アプリ",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#0f172a",
   "theme_color": "#2563eb",
   "orientation": "portrait-primary",
-  "scope": "/",
+  "categories": ["productivity", "business", "utilities"],
   "lang": "ja",
-  "categories": ["productivity", "business", "developer"],
+  "scope": "/",
   "icons": [
     {
       "src": "/img/logo_192.png",
@@ -26,8 +26,8 @@
   ],
   "shortcuts": [
     {
-      "name": "新しいプロジェクト",
-      "short_name": "新規作成",
+      "name": "新規プロジェクト",
+      "short_name": "New Project",
       "description": "新しいプロジェクトを作成",
       "url": "/?action=new-project",
       "icons": [
@@ -39,8 +39,8 @@
     },
     {
       "name": "フローチャート",
-      "short_name": "フロー",
-      "description": "フローチャートエディタを開く",
+      "short_name": "Flowchart",
+      "description": "フローチャートビューを開く",
       "url": "/?view=flow",
       "icons": [
         {
@@ -65,5 +65,14 @@
       "form_factor": "narrow",
       "label": "Jido-ka モバイル画面"
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 } 
