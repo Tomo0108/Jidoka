@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
 const smartFont = localFont({
-  src: "../../public/font/Smartfont_UI.otf",
+  src: "./../../public/font/Smartfont_UI.otf",
   display: "swap",
   variable: "--font-sans",
 });
@@ -16,8 +16,6 @@ export const metadata: Metadata = {
   title: "Jido-ka",
   description: "AI Agent for Task Automation",
   manifest: "/manifest.json",
-  themeColor: "#2563eb",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -36,6 +34,14 @@ export const metadata: Metadata = {
     "msapplication-TileColor": "#2563eb",
     "msapplication-TileImage": "/img/logo_192.png",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#2563eb",
 };
 
 export default function RootLayout({
