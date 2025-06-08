@@ -1,165 +1,36 @@
-# Jido-ka - AI自動化プラットフォーム
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-AIを活用したワークフロー自動化プラットフォーム。フローチャート作成やコード生成を支援する PWA（Progressive Web App）です。
+## Getting Started
 
-## 🚀 特徴
+First, run the development server:
 
-- **🤖 AI駆動**: 自然言語からフローチャートとコードを自動生成
-- **📊 フローチャート作成**: 直感的なドラッグ&ドロップエディタ
-- **💻 コード生成**: VBAコードの自動生成と編集
-- **📱 PWA対応**: モバイルデバイスでアプリのように利用可能
-- **🔄 リアルタイム同期**: プロジェクト間のシームレスな切り替え
-- **🎨 モダンUI**: 洗練されたユーザーインターフェース
-
-## 📋 必要な環境
-
-- **Node.js**: 18.0.0 以上
-- **Python**: 3.8.0 以上
-- **npm**: 最新版推奨
-
-## 🛠️ セットアップ
-
-### 1. リポジトリのクローン
-```bash
-git clone https://github.com/your-username/jido-ka.git
-cd jido-ka
-```
-
-### 2. 依存関係のインストール
-```bash
-npm run setup
-```
-このコマンドで以下がインストールされます：
-- メインプロジェクトの依存関係
-- フロントエンド（Next.js）の依存関係  
-- バックエンド（Python）の依存関係
-
-## 🚀 起動方法
-
-### 開発環境（推奨）
 ```bash
 npm run dev
-```
-このコマンドで以下が同時に起動します：
-- **フロントエンド**: http://localhost:3000
-- **バックエンド**: http://localhost:8000
-
-### 本番環境
-```bash
-npm run build
-npm start
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-## 📁 プロジェクト構造
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-```
-jido-ka/
-├── frontend/          # Next.js フロントエンド
-│   ├── src/
-│   │   ├── app/       # App Router
-│   │   │   ├── components/ # Reactコンポーネント
-│   │   │   └── hooks/     # カスタムフック
-│   │   ├── public/        # 静的ファイル
-│   │   └── package.json
-│   ├── backend/           # Python FastAPI バックエンド
-│   │   ├── main.py        # メインサーバー
-│   │   ├── database.py    # データベース設定
-│   │   ├── agent/         # AIエージェント
-│   │   └── requirements.txt
-│   ├── package.json       # メインプロジェクト設定
-│   └── README.md
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## 🎯 使用方法
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-### 1. プロジェクト作成
-- サイドバーの「New Project」ボタンでプロジェクト作成
-- プロジェクト名と説明を設定
+## Learn More
 
-### 2. フローチャート作成
-- 「フローチャート」タブに切り替え
-- ドラッグ&ドロップでノードを追加
-- ノード間を接続してワークフローを構築
+To learn more about Next.js, take a look at the following resources:
 
-### 3. AIによるコード生成
-- チャットでAIに指示を送信
-- 生成されたコードを「コード」タブで確認
-- コピーまたはダウンロードして利用
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-### 4. PWAインストール
-- ブラウザのインストールプロンプトからアプリをインストール
-- ホーム画面からワンタップでアクセス
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## 🛠️ 利用可能なコマンド
+## Deploy on Vercel
 
-| コマンド | 説明 |
-|---------|------|
-| `npm run dev` | 開発サーバー起動（フロント＋バック） |
-| `npm run dev:frontend` | フロントエンドのみ起動 |
-| `npm run dev:backend` | バックエンドのみ起動 |
-| `npm run build` | プロダクションビルド |
-| `npm run start` | プロダクション起動 |
-| `npm run setup` | 初回セットアップ |
-| `npm run lint` | ESLintでコード品質チェック |
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-## 🔧 設定
-
-### 環境変数
-バックエンドで必要な環境変数を `.env` ファイルで設定:
-```
-OPENAI_API_KEY=your_openai_api_key
-DATABASE_URL=sqlite:///jidoka.db
-```
-
-### PWA設定
-`frontend/public/manifest.json` でPWA設定をカスタマイズ可能
-
-## 🤝 貢献
-
-1. フォークする
-2. フィーチャーブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add amazing feature'`)
-4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
-5. プルリクエストを作成
-
-## 📄 ライセンス
-
-このプロジェクトは MIT ライセンスの下で公開されています。
-
-## 🚀 デプロイ
-
-### Vercel（フロントエンド）
-```bash
-cd frontend
-vercel --prod
-```
-
-### Railway/Heroku（バックエンド）
-```bash
-cd backend
-# プラットフォーム固有のデプロイコマンド
-```
-
-## 🐛 トラブルシューティング
-
-### よくある問題
-
-**ポートが使用中の場合:**
-```bash
-# プロセスを確認
-netstat -ano | findstr :3000
-netstat -ano | findstr :8000
-
-# プロセスを終了
-taskkill /PID <プロセスID> /F
-```
-
-**依存関係のエラー:**
-```bash
-# キャッシュクリア
-npm run setup
-```
-
----
-
-**Jido-ka** - AIによる自動化の未来を体験してください 🚀
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

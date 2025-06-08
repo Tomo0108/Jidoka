@@ -1,136 +1,41 @@
-# Dependencies
-node_modules/
-*/node_modules/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Next.js
-frontend/.next/
-frontend/out/
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# Production builds
-frontend/build/
-frontend/dist/
+# testing
+/coverage
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-backend/.env
-frontend/.env
+# next.js
+/.next/
+/out/
 
-# Logs
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
+.pnpm-debug.log*
 
-# Database
-backend/*.db
-backend/*.sqlite
-backend/*.sqlite3
+# env files (can opt-in for committing if needed)
+.env*
 
-# Python cache
-backend/__pycache__/
-backend/**/__pycache__/
-backend/*.pyc
-backend/*.pyo
-backend/*.pyd
-backend/.Python
+# vercel
+.vercel
 
-# Python virtual environment
-backend/venv/
-backend/env/
-backend/ENV/
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Temporary files
-*.tmp
-*.temp
-
-# PWA files (generated)
-frontend/public/sw.js
-frontend/public/workbox-*.js
-
-# Vercel
-frontend/.vercel
-
-# TypeScript
-frontend/*.tsbuildinfo
-
-# Cache directories
-.cache/
-.parcel-cache/
-
-# Coverage directory used by tools like istanbul
-coverage/
-
-# Workspace files
-workspace/*.generated
-
-# Local development files
-*.local
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# IDE / Editor
-.idea/
-.vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.swp
-
-# OS
-.DS_Store
-Thumbs.db 
+# typescript
+*.tsbuildinfo
+next-env.d.ts
