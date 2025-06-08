@@ -1,15 +1,916 @@
+"use client";
+
+import { useState, useEffect, useRef, useCallback } from "react";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Bot, User, CornerDownLeft, PlusCircle, Settings, Share2, FolderKanban, LoaderCircle, FileCode, Download, Workflow, MessageSquarePlus, Undo, Redo, MessageSquare, Link, Code, Twitter, Facebook, Linkedin, Edit, Trash2, Copy, Eye, BookOpen, Terminal, FileText, Zap, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { Flowchart } from "@/components/Flowchart";
+import { Sidebar } from "@/components/Sidebar";
+import { Inspector } from "@/components/Inspector";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { useFlowStore, useTemporalStore } from '@/hooks/useFlowStore';
+
+import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+
+interface Message {
+  text: string;
+  sender: "user" | "ai";
+}
+
+interface Project {
+  id: number;
+  name: string;
+  description?: string;
+}
+
 export default function Home() {
+  const { toast } = useToast();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [activeProject, setActiveProject] = useState<Project | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [mainView, setMainView] = useState<'chat' | 'code' | 'flow'>('chat');
+  const [generatedCode] = useState({
+    explanation: "これは、ユーザーの指示に基づいてAIが生成したVBAコードのサンプルです。ボタンをクリックすると、メッセージボックスに「Hello, World!」と表示されます。",
+    code: `Sub HelloWorld()\n  MsgBox "Hello, World!"\nEnd Sub`,
+    filename: "HelloWorld.vba"
+  });
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [editingProjectName, setEditingProjectName] = useState("");
+  const [editingProjectDescription, setEditingProjectDescription] = useState("");
+
+  const setFlow = useFlowStore((state) => state.setFlow);
+  const loadProjectFlow = useFlowStore((state) => state.loadProjectFlow);
+  const saveProjectFlow = useFlowStore((state) => state.saveProjectFlow);
+  const currentProjectId = useFlowStore((state) => state.currentProjectId);
+  const undo = useTemporalStore(state => state.undo);
+  const redo = useTemporalStore(state => state.redo);
+  const pastStates = useTemporalStore(state => state.pastStates);
+  const futureStates = useTemporalStore(state => state.futureStates);
+
+  // URLパラメーターからプロジェクトデータを読み込む
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectData = urlParams.get('project');
+    const action = urlParams.get('action');
+    const view = urlParams.get('view');
+    
+    // PWAショートカットの処理
+    if (action === 'new-project') {
+      // 新しいプロジェクト作成を非同期で実行
+      const createNewProject = async () => {
+        const newProjectName = prompt("Enter the name for the new project:", `Project ${projects.length + 1}`);
+        if (!newProjectName) return;
+
+        try {
+          const response = await fetch("http://localhost:8000/api/projects", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newProjectName }),
+          });
+          const newProject: Project = await response.json();
+          setProjects(prev => [newProject, ...prev]);
+          setActiveProject(newProject);
+          loadProjectFlow(newProject.id);
+        } catch (error) {
+          console.error("Failed to create project:", error);
+        }
+      };
+      createNewProject();
+      // URLパラメーターをクリア
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      return;
+    }
+    
+    if (view === 'flow') {
+      setMainView('flow');
+      // URLパラメーターをクリア
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      return;
+    }
+    
+    if (projectData) {
+      try {
+        const decodedData = JSON.parse(decodeURIComponent(projectData));
+        
+        // 共有されたプロジェクトデータをセット
+        if (decodedData.project && decodedData.messages) {
+          setActiveProject(decodedData.project);
+          setMessages(decodedData.messages);
+          setMainView('chat'); // チャットビューに切り替え
+          
+          toast({
+            title: "プロジェクト読み込み完了",
+            description: `プロジェクト「${decodedData.project.name}」を読み込みました。`,
+          });
+        }
+        
+        // URLパラメーターをクリア（履歴を汚さないため）
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      } catch (error) {
+        console.error('Failed to load shared project:', error);
+        toast({
+          variant: "destructive",
+          title: "読み込みエラー",
+          description: "共有されたプロジェクトの読み込みに失敗しました。",
+        });
+      }
+    }
+  }, [setFlow, toast, loadProjectFlow, projects.length]);
+
+  const handleCreateProject = useCallback(async (isInitial = false) => {
+    const newProjectName = isInitial ? "New Project" : prompt("Enter the name for the new project:", `Project ${projects.length + 1}`);
+    if (!newProjectName) return;
+
+    try {
+      const response = await fetch("http://localhost:8000/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newProjectName }),
+      });
+      const newProject: Project = await response.json();
+      setProjects(prev => [newProject, ...prev]);
+      
+      // 前のプロジェクトのフローを保存
+      if (currentProjectId !== null) {
+        saveProjectFlow(currentProjectId);
+      }
+      
+      // 新しいプロジェクトに切り替えてフローを読み込み
+      setActiveProject(newProject);
+      loadProjectFlow(newProject.id);
+    } catch (error) {
+      console.error("Failed to create project:", error);
+      // バックエンドが利用できない場合のフォールバック
+      const newProject: Project = { 
+        id: Date.now(), // 一意のIDとしてタイムスタンプを使用
+        name: newProjectName, 
+        description: "オフラインプロジェクト" 
+      };
+      setProjects(prev => [newProject, ...prev]);
+      
+      // 前のプロジェクトのフローを保存
+      if (currentProjectId !== null) {
+        saveProjectFlow(currentProjectId);
+      }
+      
+      // 新しいプロジェクトに切り替えてフローを読み込み
+      setActiveProject(newProject);
+      loadProjectFlow(newProject.id);
+      
+      toast({
+        title: "オフラインモード",
+        description: "バックエンドが利用できないため、ローカルでプロジェクトを作成しました。",
+      });
+    }
+  }, [projects.length, currentProjectId, saveProjectFlow, loadProjectFlow, toast]);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/projects");
+        const data: Project[] = await response.json();
+        setProjects(data);
+        if (data.length > 0 && !activeProject) {
+          setActiveProject(data[0]);
+          loadProjectFlow(data[0].id);
+        }
+      } catch (error) {
+        console.error("Failed to fetch projects:", error);
+        // バックエンドが利用できない場合は初期プロジェクトを作成
+        if (projects.length === 0) {
+          handleCreateProject(true);
+        }
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (activeProject) {
+        try {
+          const response = await fetch(`http://localhost:8000/api/projects/${activeProject.id}/messages`);
+          const data: Message[] = await response.json();
+          setMessages(data);
+        } catch (error) {
+          console.error("Failed to fetch messages:", error);
+        }
+      }
+    };
+
+    fetchMessages();
+  }, [activeProject]);
+
+  const handleGenerateFlow = async () => {
+    if (!activeProject) return;
+    
+    setIsGenerating(true);
+    try {
+      const response = await fetch(`http://localhost:8000/api/projects/${activeProject.id}/generate-flow`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages }),
+      });
+      
+      if (response.ok) {
+        const flowData = await response.json();
+        setFlow(flowData);
+        setMainView('flow');
+        toast({
+          title: "フローチャート生成完了",
+          description: "メッセージからフローチャートが生成されました。",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to generate flow:', error);
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: "フローチャートの生成に失敗しました。",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = { text: input, sender: "user" };
+    setMessages(prev => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+
+    // AIの応答をシミュレート
+    setTimeout(() => {
+      const aiResponse: Message = {
+        text: `了解しました！「${input}」について説明します。\n\nこれはAIからの応答のサンプルです。実際のAI統合時には、この部分が本物のAI応答に置き換わります。`,
+        sender: "ai"
+      };
+      setMessages(prev => [...prev, aiResponse]);
+      setIsLoading(false);
+    }, 1500);
+  };
+
+  const handleDownloadCode = () => {
+    const element = document.createElement("a");
+    const file = new Blob([generatedCode.code], { type: "text/plain" });
+    element.href = URL.createObjectURL(file);
+    element.download = generatedCode.filename;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    
+    toast({
+      title: "ダウンロード完了",
+      description: `${generatedCode.filename} をダウンロードしました。`,
+    });
+  };
+
+  const handleCopyCode = async () => {
+    await navigator.clipboard.writeText(generatedCode.code);
+    toast({
+      title: "コピー完了",
+      description: "コードをクリップボードにコピーしました。",
+    });
+  };
+
+  const generateProjectShareableUrl = () => {
+    const projectData = {
+      project: activeProject,
+      messages: messages
+    };
+    
+    const encodedData = encodeURIComponent(JSON.stringify(projectData));
+    const baseUrl = window.location.origin + window.location.pathname;
+    return `${baseUrl}?project=${encodedData}`;
+  };
+
+  const copyToClipboard = async (text: string, successMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "コピー完了",
+        description: successMessage,
+      });
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      toast({
+        variant: "destructive",
+        title: "エラー",
+        description: "コピーに失敗しました。",
+      });
+    }
+  };
+
+  const handleShareProjectUrl = async () => {
+    const shareableUrl = generateProjectShareableUrl();
+    await copyToClipboard(shareableUrl, "プロジェクトのURLをコピーしました。");
+  };
+
+  const handleShareProjectEmbed = async () => {
+    const shareableUrl = generateProjectShareableUrl();
+    const embedCode = `<iframe src="${shareableUrl}" width="100%" height="600" frameborder="0"></iframe>`;
+    await copyToClipboard(embedCode, "埋め込みコードをコピーしました。");
+  };
+
+  const handleShareProjectSocial = (platform: string) => {
+    const shareableUrl = generateProjectShareableUrl();
+    const text = `${activeProject?.name || 'プロジェクト'}をチェック！`;
+    
+    let socialUrl = '';
+    switch (platform) {
+      case 'twitter':
+        socialUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareableUrl)}`;
+        break;
+      case 'facebook':
+        socialUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareableUrl)}`;
+        break;
+      case 'linkedin':
+        socialUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareableUrl)}`;
+        break;
+    }
+    
+    if (socialUrl) {
+      window.open(socialUrl, '_blank', 'width=600,height=400');
+    }
+  };
+
+  const handleNativeShareProject = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${activeProject?.name || 'プロジェクト'} - Jido-ka`,
+          text: 'このプロジェクトをチェックしてください！',
+          url: generateProjectShareableUrl()
+        });
+        
+        toast({
+          title: "共有完了",
+          description: "プロジェクトが共有されました。",
+        });
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Failed to share:', error);
+          toast({
+            variant: "destructive",
+            title: "エラー",
+            description: "共有に失敗しました。",
+          });
+        }
+      }
+    } else {
+      // Fallback to URL copy
+      await handleShareProjectUrl();
+    }
+  };
+
+  const handleOpenSettings = () => {
+    if (activeProject) {
+      setEditingProjectName(activeProject.name);
+      setEditingProjectDescription(activeProject.description || "");
+    }
+    setIsSettingsOpen(true);
+  };
+
+  const handleUpdateProject = async () => {
+    if (!activeProject) return;
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/projects/${activeProject.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editingProjectName,
+          description: editingProjectDescription,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedProject: Project = await response.json();
+        setActiveProject(updatedProject);
+        setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+        setIsSettingsOpen(false);
+        
+        toast({
+          title: "更新完了",
+          description: "プロジェクト情報を更新しました。",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update project:', error);
+      // オフラインの場合のローカル更新
+      const updatedProject: Project = {
+        ...activeProject,
+        name: editingProjectName,
+        description: editingProjectDescription,
+      };
+      setActiveProject(updatedProject);
+      setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+      setIsSettingsOpen(false);
+      
+      toast({
+        title: "更新完了",
+        description: "プロジェクト情報を更新しました（ローカル）。",
+      });
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!activeProject) return;
+    
+    const confirmed = confirm(`プロジェクト「${activeProject.name}」を削除してもよろしいですか？`);
+    if (!confirmed) return;
+
+    try {
+      await fetch(`http://localhost:8000/api/projects/${activeProject.id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+    }
+
+    // ローカル状態の更新
+    const updatedProjects = projects.filter(p => p.id !== activeProject.id);
+    setProjects(updatedProjects);
+    setActiveProject(updatedProjects.length > 0 ? updatedProjects[0] : null);
+    setMessages([]);
+    setIsSettingsOpen(false);
+    
+    toast({
+      title: "削除完了",
+      description: `プロジェクト「${activeProject.name}」を削除しました。`,
+    });
+  };
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
+    }
+  }, [messages]);
+
   return (
-    <main className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-4">Jidoka</h1>
-        <p className="text-lg text-gray-600 mb-8">
-          セットアップが完了しました！アプリケーションが正常に動作しています。
-        </p>
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-          <strong>成功!</strong> Next.jsアプリケーションが正常にデプロイされました。
+    <TooltipProvider>
+    <div className="flex h-screen bg-background text-foreground">
+        <div className="flex-1 flex flex-col">
+          <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur-sm">
+            <div className="flex h-14 items-center justify-between px-4">
+              {/* 左側 - ロゴとプロジェクト */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                    <Zap className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <h1 className="text-lg font-bold">Jido-ka</h1>
+                </div>
+                
+                {activeProject && (
+                  <div className="flex items-center gap-2">
+                    <Separator orientation="vertical" className="h-6" />
+                    <div className="flex items-center gap-2">
+                      <FolderKanban className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">{activeProject.name}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 中央 - ビュー切り替え */}
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                <Button
+                  variant={mainView === 'chat' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setMainView('chat')}
+                  className="h-8 px-3"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  チャット
+                </Button>
+                <Button
+                  variant={mainView === 'flow' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setMainView('flow')}
+                  className="h-8 px-3"
+                >
+                  <Workflow className="h-4 w-4 mr-2" />
+                  フローチャート
+                </Button>
+                <Button
+                  variant={mainView === 'code' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setMainView('code')}
+                  className="h-8 px-3"
+                >
+                  <FileCode className="h-4 w-4 mr-2" />
+                  コード
+                </Button>
+              </div>
+
+              {/* 右側 - アクション */}
+              <div className="flex items-center gap-1">
+                {/* Undo/Redo ボタン */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={undo}
+                      disabled={pastStates.length === 0}
+                      className="h-8 w-8"
+                    >
+                      <Undo className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>元に戻す</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={redo}
+                      disabled={futureStates.length === 0}
+                      className="h-8 w-8"
+                    >
+                      <Redo className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>やり直し</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Separator orientation="vertical" className="h-6 mx-1" />
+
+                {/* フローチャート生成ボタン */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleGenerateFlow}
+                      disabled={isGenerating || messages.length === 0}
+                      className="h-8 w-8"
+                    >
+                      {isGenerating ? (
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <MessageSquarePlus className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>フローチャート生成</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* 共有メニュー */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={handleNativeShareProject}>
+                      <Share2 className="h-4 w-4 mr-2" />
+                      共有
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleShareProjectUrl}>
+                      <Link className="h-4 w-4 mr-2" />
+                      URLをコピー
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleShareProjectEmbed}>
+                      <Code className="h-4 w-4 mr-2" />
+                      埋め込みコード
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleShareProjectSocial('twitter')}>
+                      <Twitter className="h-4 w-4 mr-2" />
+                      Twitter
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleShareProjectSocial('facebook')}>
+                      <Facebook className="h-4 w-4 mr-2" />
+                      Facebook
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleShareProjectSocial('linkedin')}>
+                      <Linkedin className="h-4 w-4 mr-2" />
+                      LinkedIn
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* 新規プロジェクト */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => handleCreateProject()} className="h-8 w-8">
+                      <PlusCircle className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>新規プロジェクト</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* 設定ダイアログ */}
+                <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={handleOpenSettings} className="h-8 w-8">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>プロジェクト設定</DialogTitle>
+                      <DialogDescription>
+                        プロジェクトの名前と説明を編集できます。
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="project-name">プロジェクト名</Label>
+                        <Input
+                          id="project-name"
+                          value={editingProjectName}
+                          onChange={(e) => setEditingProjectName(e.target.value)}
+                          placeholder="プロジェクト名を入力..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="project-description">説明</Label>
+                        <Textarea
+                          id="project-description"
+                          value={editingProjectDescription}
+                          onChange={(e) => setEditingProjectDescription(e.target.value)}
+                          placeholder="プロジェクトの説明を入力..."
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter className="flex gap-2">
+                      <Button
+                        variant="destructive"
+                        onClick={handleDeleteProject}
+                        className="mr-auto"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        削除
+                      </Button>
+                      <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
+                        キャンセル
+                      </Button>
+                      <Button onClick={handleUpdateProject}>
+                        保存
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+          </header>
+
+          <div className="flex-1 overflow-y-auto">
+
+            {mainView === 'flow' ? (
+              <ErrorBoundary>
+                <ResizablePanelGroup direction="horizontal" className="h-full w-full">
+                  <ResizablePanel defaultSize={20} minSize={15}>
+                    <ErrorBoundary>
+                      <Sidebar />
+                    </ErrorBoundary>
+                  </ResizablePanel>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel defaultSize={80}>
+                     <ResizablePanelGroup direction="horizontal">
+                        <ResizablePanel defaultSize={75}>
+                          <ErrorBoundary>
+                            <Flowchart />
+                          </ErrorBoundary>
+                        </ResizablePanel>
+                        <ResizableHandle withHandle />
+                        <ResizablePanel defaultSize={25}>
+                          <ErrorBoundary>
+                            <Inspector />
+                          </ErrorBoundary>
+                        </ResizablePanel>
+                     </ResizablePanelGroup>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </ErrorBoundary>
+            ) : mainView === 'chat' ? (
+              <main className="h-full p-4 md:p-6">
+                <ScrollArea className="h-full" ref={scrollAreaRef}>
+                  <div className="space-y-6">
+                    {messages.map((msg, index) => (
+                      <div
+                        key={index}
+                        className={cn("flex items-start gap-4", msg.sender === "user" ? "flex-row-reverse" : "")}
+                      >
+                        <Avatar className="h-9 w-9">
+                          <AvatarFallback>{msg.sender === 'ai' ? <Bot size={20} /> : <User size={20} />}</AvatarFallback>
+                        </Avatar>
+                        <div
+                          className={cn(
+                            "max-w-2xl rounded-lg p-3 text-base prose",
+                            msg.sender === "user" 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-muted dark:prose-invert"
+                          )}
+                        >
+                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {msg.text}
+                           </ReactMarkdown>
+                        </div>
+                      </div>
+                    ))}
+                    {isLoading && messages.length > 0 && messages[messages.length-1].sender === 'user' && (
+                      <div className="flex items-start gap-4">
+                        <Avatar className="h-9 w-9">
+                          <AvatarFallback><Bot size={20} /></AvatarFallback>
+                        </Avatar>
+                        <div className="flex items-center space-x-2">
+                          <LoaderCircle className="animate-spin h-5 w-5 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">Thinking...</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </main>
+            ) : mainView === 'code' ? (
+              <div className="flex-1 overflow-y-auto">
+                <div className="max-w-6xl mx-auto p-6 space-y-6">
+                  {/* ヘッダー */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h1 className="text-2xl font-semibold">生成されたコード</h1>
+                      <p className="text-sm text-muted-foreground mt-1">{generatedCode.filename}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" onClick={handleCopyCode} size="sm">
+                        <Copy className="h-4 w-4 mr-2" />
+                        コピー
+                      </Button>
+                      <Button onClick={handleDownloadCode} size="sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        ダウンロード
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* メインコンテンツ */}
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    
+                    {/* サイドパネル */}
+                    <div className="lg:col-span-1 space-y-6">
+                      {/* コード説明 */}
+                      <div>
+                        <h3 className="text-sm font-medium mb-3">説明</h3>
+                        <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {generatedCode.explanation}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+
+                      {/* ファイル情報 */}
+                      <div>
+                        <h3 className="text-sm font-medium mb-3">ファイル情報</h3>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">言語</span>
+                            <span>VBA</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">行数</span>
+                            <span>{generatedCode.code.split('\n').length}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">文字数</span>
+                            <span>{generatedCode.code.length}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* コードエリア */}
+                    <div className="lg:col-span-3">
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-3">
+                          <CardTitle className="text-base">{generatedCode.filename}</CardTitle>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={handleCopyCode}>
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={handleDownloadCode}>
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <Separator />
+                        <CardContent className="p-0">
+                          <div className="relative max-h-[600px] overflow-auto">
+                            <pre className="p-4 text-sm font-mono leading-relaxed">
+                              <code>
+                                {generatedCode.code.split('\n').map((line, index) => (
+                                  <div key={index} className="flex">
+                                    <span className="select-none w-8 text-right pr-3 text-muted-foreground/50 text-xs leading-relaxed">
+                                      {index + 1}
+                                    </span>
+                                    <span className="flex-1">{line || ' '}</span>
+                                  </div>
+                                ))}
+                              </code>
+                            </pre>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 h-full">
+                <Flowchart />
+              </div>
+            )}
+          </div>
+
+          <footer className="sticky bottom-0 border-t bg-background/95 p-4 backdrop-blur-sm">
+            <div className="relative">
+              <form onSubmit={handleSendMessage}>
+                <Input
+                  placeholder="メッセージを送信..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  className="pr-16 h-12 text-base font-chat"
+                  disabled={isLoading}
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="absolute right-12 top-1/2 -translate-y-1/2 h-8 w-8"
+                  disabled={isLoading || input.trim() === ""}
+                >
+                  <CornerDownLeft className="h-4 w-4" />
+                </Button>
+              </form>
+            </div>
+          </footer>
         </div>
-      </div>
-    </main>
+    </div>
+    <Toaster />
+    <PWAInstallPrompt />
+    </TooltipProvider>
   );
 } 
