@@ -3,6 +3,9 @@ scripts/
 workspace/
 .history/
 src/
+docs/
+public/font/
+public/img/
 *.log
 node_modules
 .env.local
