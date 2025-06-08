@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { cn } from "../src/lib/utils";
+import { cn } from "@/lib/utils";
 
 const smartFont = localFont({
   src: "../public/font/Smartfont_UI.otf",
