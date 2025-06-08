@@ -4,28 +4,28 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Bot, User, CornerDownLeft, PlusCircle, Settings, Share2, FolderKanban, LoaderCircle, FileCode, Download, Workflow, MessageSquarePlus, Undo, Redo, MessageSquare, Link, Code, Twitter, Facebook, Linkedin, Edit, Trash2, Copy, Eye, BookOpen, Terminal, FileText, Zap, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { Button } from "../src/components/ui/button";
+import { Input } from "../src/components/ui/input";
+import { ScrollArea } from "../src/components/ui/scroll-area";
+import { Avatar, AvatarFallback } from "../src/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../src/components/ui/tooltip";
+import { cn } from "../src/lib/utils";
 import Image from "next/image";
-import { Flowchart } from "@/components/Flowchart";
-import { Sidebar } from "@/components/Sidebar";
-import { Inspector } from "@/components/Inspector";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { useFlowStore, useTemporalStore } from '@/hooks/useFlowStore';
+import { Flowchart } from "../src/components/Flowchart";
+import { Sidebar } from "../src/components/Sidebar";
+import { Inspector } from "../src/components/Inspector";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "../src/components/ui/resizable";
+import { useFlowStore, useTemporalStore } from '../src/hooks/useFlowStore';
 
-import { Toaster } from "@/components/ui/toaster";
-import { useToast } from "@/hooks/use-toast";
+import { Toaster } from "../src/components/ui/toaster";
+import { useToast } from "../src/hooks/use-toast";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
   DropdownMenuTrigger,
   DropdownMenuSeparator
-} from '@/components/ui/dropdown-menu';
+} from '../src/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -34,14 +34,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+} from '../src/components/ui/dialog';
+import { Label } from '../src/components/ui/label';
+import { Textarea } from '../src/components/ui/textarea';
+import { ErrorBoundary } from "../src/components/ErrorBoundary";
+import { Badge } from '../src/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../src/components/ui/card';
+import { Separator } from '../src/components/ui/separator';
+import { PWAInstallPrompt } from '../src/components/PWAInstallPrompt';
 
 interface Message {
   text: string;
