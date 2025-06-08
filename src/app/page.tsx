@@ -41,7 +41,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-// import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 
 interface Message {
   text: string;
@@ -1059,7 +1059,7 @@ export default function Home() {
         </div>
     </div>
     <Toaster />
-            {/* <PWAInstallPrompt /> */}
+    <PWAInstallPrompt />
     </TooltipProvider>
   );
 }
