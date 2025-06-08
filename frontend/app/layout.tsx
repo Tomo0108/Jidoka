@@ -5,7 +5,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 
 const smartFont = localFont({
-  src: "../../public/font/Smartfont_UI.otf",
+  src: "../public/font/Smartfont_UI.otf",
   display: "swap",
   variable: "--font-sans",
 });
