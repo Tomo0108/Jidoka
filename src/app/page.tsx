@@ -178,8 +178,29 @@ export default function Home() {
       loadProjectFlow(newProject.id);
     } catch (error) {
       console.error("Failed to create project:", error);
+      // バックエンドが利用できない場合のフォールバック
+      const newProject: Project = { 
+        id: Date.now(), // 一意のIDとしてタイムスタンプを使用
+        name: newProjectName, 
+        description: "オフラインプロジェクト" 
+      };
+      setProjects(prev => [newProject, ...prev]);
+      
+      // 前のプロジェクトのフローを保存
+      if (currentProjectId !== null) {
+        saveProjectFlow(currentProjectId);
+      }
+      
+      // 新しいプロジェクトに切り替えてフローを読み込み
+      setActiveProject(newProject);
+      loadProjectFlow(newProject.id);
+      
+      toast({
+        title: "オフラインモード",
+        description: "バックエンドが利用できないため、ローカルでプロジェクトを作成しました。",
+      });
     }
-  }, [projects.length, currentProjectId, saveProjectFlow, loadProjectFlow]);
+  }, [projects.length, currentProjectId, saveProjectFlow, loadProjectFlow, toast]);
 
   const handleProjectSwitch = useCallback((project: Project) => {
     // 現在のプロジェクトのフローを保存
@@ -215,10 +236,20 @@ export default function Home() {
             loadProjectFlow(newProject.id);
           } catch (error) {
             console.error("Failed to create initial project:", error);
+            // バックエンドが利用できない場合のフォールバック
+            const fallbackProject: Project = { id: 1, name: "Demo Project", description: "オフラインデモプロジェクト" };
+            setProjects([fallbackProject]);
+            setActiveProject(fallbackProject);
+            loadProjectFlow(fallbackProject.id);
           }
         }
       } catch (error) {
         console.error("Failed to fetch projects:", error);
+        // バックエンドが利用できない場合のフォールバック
+        const fallbackProject: Project = { id: 1, name: "Demo Project", description: "オフラインデモプロジェクト" };
+        setProjects([fallbackProject]);
+        setActiveProject(fallbackProject);
+        loadProjectFlow(fallbackProject.id);
       }
     };
     fetchProjects();
@@ -241,6 +272,8 @@ export default function Home() {
         setMessages(data);
       } catch (error) {
         console.error("Failed to fetch messages:", error);
+        // バックエンドが利用できない場合は空配列のまま
+        setMessages([]);
       } finally {
         setIsLoading(false);
       }
@@ -306,8 +339,12 @@ export default function Home() {
       setMessages((prev) => [...prev, aiResponse]);
     } catch (error) {
       console.error("Error sending message:", error);
-      const errorResponse: Message = { text: "バックエンドへの接続でエラーが発生しました。", sender: "ai" };
-      setMessages((prev) => [...prev, errorResponse]);
+      // オフラインモード用のモックレスポンス
+      const mockResponse: Message = { 
+        text: "現在オフラインモードで動作しています。バックエンドサーバーが利用できないため、実際のAI応答は提供できませんが、フローチャート機能やその他の機能は引き続きご利用いただけます。", 
+        sender: "ai" 
+      };
+      setMessages((prev) => [...prev, mockResponse]);
     } finally {
       setIsLoading(false);
     }
@@ -511,10 +548,20 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Failed to update project:", error);
+      // オフラインモードでのフォールバック - ローカルでプロジェクト情報を更新
+      const updatedProject: Project = {
+        ...activeProject,
+        name: trimmedName,
+        description: editingProjectDescription.trim()
+      };
+      
+      setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+      setActiveProject(updatedProject);
+      setIsSettingsOpen(false);
+      
       toast({
-        variant: "destructive",
-        title: "更新エラー",
-        description: "プロジェクトの更新に失敗しました。",
+        title: "プロジェクト更新完了（オフライン）",
+        description: "ローカルでプロジェクト情報を更新しました。",
       });
     }
   };
@@ -554,10 +601,23 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Failed to delete project:", error);
+      // オフラインモードでのフォールバック - ローカルでプロジェクトを削除
+      const updatedProjects = projects.filter(p => p.id !== activeProject.id);
+      setProjects(updatedProjects);
+      
+      // 他のプロジェクトに切り替えまたは新規作成
+      if (updatedProjects.length > 0) {
+        setActiveProject(updatedProjects[0]);
+        loadProjectFlow(updatedProjects[0].id);
+      } else {
+        await handleCreateProject(true);
+      }
+      
+      setIsSettingsOpen(false);
+      
       toast({
-        variant: "destructive",
-        title: "削除エラー",
-        description: "プロジェクトの削除に失敗しました。",
+        title: "プロジェクト削除完了（オフライン）",
+        description: "ローカルでプロジェクトを削除しました。",
       });
     }
   };
