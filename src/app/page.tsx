@@ -80,11 +80,37 @@ export default function Home() {
   const [editingProjectName, setEditingProjectName] = useState("");
   const [editingProjectDescription, setEditingProjectDescription] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
+  // 画面サイズの検出
+  useEffect(() => {
+    const checkMobile = () => {
+      const width = window.innerWidth;
+      const mobile = width < 768;
+      setIsMobile(mobile);
+      console.log(`Window width: ${width}px, Is mobile: ${mobile}`);
+      
+      // モバイルでない場合はサイドバーを閉じる
+      if (!mobile && isSidebarOpen) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }
+  }, [isSidebarOpen]);
+
   // デバッグ用: サイドバーの状態をログ出力
   useEffect(() => {
+    console.log('=== DEBUG INFO ===');
     console.log('Sidebar state:', isSidebarOpen);
-  }, [isSidebarOpen]);
+    console.log('Is mobile:', isMobile);
+    console.log('Window width:', typeof window !== 'undefined' ? window.innerWidth : 'SSR');
+    console.log('=================');
+  }, [isSidebarOpen, isMobile]);
 
   const setFlow = useFlowStore((state) => state.setFlow);
   const loadProjectFlow = useFlowStore((state) => state.loadProjectFlow);
@@ -727,19 +753,30 @@ export default function Home() {
     <TooltipProvider>
       <div className="flex h-screen w-full bg-background text-foreground">
         {/* Mobile sidebar overlay */}
-        {isSidebarOpen && (
+        {isSidebarOpen && isMobile && (
           <div 
-            className="fixed inset-0 bg-black/50 z-20 block md:hidden" 
-            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 bg-black/50 z-20" 
+            onClick={() => {
+              console.log('Overlay clicked!');
+              setIsSidebarOpen(false);
+            }}
           />
         )}
         
-        <aside className={cn(
-          "w-72 flex flex-col border-r bg-muted/20 p-4 transition-transform duration-200 ease-in-out",
-          "fixed inset-y-0 left-0 z-30",
-          "sidebar-desktop",
-          isSidebarOpen ? "sidebar-mobile-shown" : "sidebar-mobile-hidden"
-        )}>
+        <aside 
+          className={cn(
+            "w-72 flex flex-col border-r bg-muted/20 p-4 transition-transform duration-200 ease-in-out",
+            "fixed inset-y-0 left-0 z-30 md:relative",
+            "sidebar-desktop",
+            isSidebarOpen ? "sidebar-mobile-shown" : "sidebar-mobile-hidden"
+          )}
+          style={{
+            transform: isMobile 
+              ? (isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)') 
+              : 'translateX(0)',
+            position: isMobile ? 'fixed' : 'relative'
+          }}
+        >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Image
@@ -751,14 +788,19 @@ export default function Home() {
               />
               <h2 className="text-2xl font-bold tracking-tight">Jido-ka</h2>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="mobile-close-button"
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="mobile-close-button"
+                onClick={() => {
+                  console.log('Close button clicked!');
+                  setIsSidebarOpen(false);
+                }}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            )}
           </div>
           <div className="mt-4">
             <Button className="w-full" onClick={() => handleCreateProject()}>
@@ -804,14 +846,19 @@ export default function Home() {
         <div className="flex flex-1 flex-col h-screen md:ml-0">
           <header className="sticky top-0 z-10 flex h-[57px] items-center gap-2 md:gap-4 border-b bg-background px-2 md:px-4 shadow-sm">
             {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="mobile-menu-button"
-              onClick={() => setIsSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="mobile-menu-button flex"
+                onClick={() => {
+                  console.log('Hamburger menu clicked!');
+                  setIsSidebarOpen(true);
+                }}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            )}
             
             <h1 
               className="text-lg md:text-xl font-semibold truncate cursor-pointer flex-1 min-w-0"
