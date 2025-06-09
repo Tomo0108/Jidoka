@@ -62,6 +62,13 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [mainView, setMainView] = useState<'chat' | 'code' | 'flow'>('chat');
+  
+  // API base URL - 開発環境ではlocalhost、本番環境では適切なURLを使用
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || (
+    typeof window !== 'undefined' && window.location.hostname === 'localhost' 
+      ? 'http://localhost:8000' 
+      : '' // 本番環境ではバックエンドなしで動作
+  );
   const [generatedCode] = useState({
     explanation: "これは、ユーザーの指示に基づいてAIが生成したVBAコードのサンプルです。ボタンをクリックすると、メッセージボックスに「Hello, World!」と表示されます。",
     code: `Sub HelloWorld()\n  MsgBox "Hello, World!"\nEnd Sub`,
@@ -160,8 +167,28 @@ export default function Home() {
     const newProjectName = isInitial ? "New Project" : prompt("Enter the name for the new project:", `Project ${projects.length + 1}`);
     if (!newProjectName) return;
 
+    // バックエンドが設定されていない場合は直接ローカルモードを使用
+    if (!API_BASE_URL) {
+      const newProject: Project = { 
+        id: Date.now(), // 一意のIDとしてタイムスタンプを使用
+        name: newProjectName, 
+        description: "オフラインプロジェクト" 
+      };
+      setProjects(prev => [newProject, ...prev]);
+      
+      // 前のプロジェクトのフローを保存
+      if (currentProjectId !== null) {
+        saveProjectFlow(currentProjectId);
+      }
+      
+      // 新しいプロジェクトに切り替えてフローを読み込み
+      setActiveProject(newProject);
+      loadProjectFlow(newProject.id);
+      return;
+    }
+
     try {
-      const response = await fetch("http://localhost:8000/api/projects", {
+      const response = await fetch(`${API_BASE_URL}/api/projects`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newProjectName }),
@@ -201,7 +228,7 @@ export default function Home() {
         description: "バックエンドが利用できないため、ローカルでプロジェクトを作成しました。",
       });
     }
-  }, [projects.length, currentProjectId, saveProjectFlow, loadProjectFlow, toast]);
+  }, [projects.length, currentProjectId, saveProjectFlow, loadProjectFlow, toast, API_BASE_URL]);
 
   const handleProjectSwitch = useCallback((project: Project) => {
     // 現在のプロジェクトのフローを保存
@@ -216,8 +243,17 @@ export default function Home() {
 
   useEffect(() => {
     const fetchProjects = async () => {
+      // バックエンドが設定されていない場合は直接ローカルモードを使用
+      if (!API_BASE_URL) {
+        const fallbackProject: Project = { id: 1, name: "Demo Project", description: "オフラインデモプロジェクト" };
+        setProjects([fallbackProject]);
+        setActiveProject(fallbackProject);
+        loadProjectFlow(fallbackProject.id);
+        return;
+      }
+
       try {
-        const response = await fetch("http://localhost:8000/api/projects");
+        const response = await fetch(`${API_BASE_URL}/api/projects`);
         const data: Project[] = await response.json();
         setProjects(data);
         if (data.length > 0) {
@@ -226,7 +262,7 @@ export default function Home() {
         } else {
           // プロジェクトが存在しない場合は新規作成
           try {
-            const response = await fetch("http://localhost:8000/api/projects", {
+            const response = await fetch(`${API_BASE_URL}/api/projects`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ name: "New Project" }),
@@ -254,7 +290,7 @@ export default function Home() {
       }
     };
     fetchProjects();
-  }, [loadProjectFlow]);
+  }, [loadProjectFlow, API_BASE_URL]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -267,8 +303,16 @@ export default function Home() {
       if (!activeProject) return;
       setIsLoading(true);
       setMessages([]);
+      
+      // バックエンドが設定されていない場合はローカルモード
+      if (!API_BASE_URL) {
+        setMessages([]);
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const response = await fetch(`http://localhost:8000/api/projects/${activeProject.id}/messages`);
+        const response = await fetch(`${API_BASE_URL}/api/projects/${activeProject.id}/messages`);
         const data: Message[] = await response.json();
         setMessages(data);
       } catch (error) {
@@ -282,7 +326,7 @@ export default function Home() {
     if (mainView === 'chat') {
       fetchMessages();
     }
-  }, [activeProject, mainView]);
+  }, [activeProject, mainView, API_BASE_URL]);
 
   const handleGenerateFlow = async () => {
     if (!input.trim()) return;
@@ -329,8 +373,19 @@ export default function Home() {
     setInput("");
     setIsLoading(true);
 
+    // バックエンドが設定されていない場合は直接モックレスポンス
+    if (!API_BASE_URL) {
+      const mockResponse: Message = { 
+        text: "現在オフラインモードで動作しています。バックエンドサーバーが利用できないため、実際のAI応答は提供できませんが、フローチャート機能やその他の機能は引き続きご利用いただけます。", 
+        sender: "ai" 
+      };
+      setMessages((prev) => [...prev, mockResponse]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch("http://localhost:8000/api/chat", {
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ project_id: activeProject.id, message: currentInput }),
@@ -522,8 +577,26 @@ export default function Home() {
       return;
     }
 
+    // バックエンドが設定されていない場合はローカル更新のみ
+    if (!API_BASE_URL) {
+      const updatedProject = {
+        ...activeProject,
+        name: trimmedName,
+        description: editingProjectDescription.trim()
+      };
+      setActiveProject(updatedProject);
+      setProjects(prev => prev.map(p => p.id === activeProject.id ? updatedProject : p));
+      setIsSettingsOpen(false);
+      
+      toast({
+        title: "プロジェクト更新完了",
+        description: "ローカルでプロジェクト情報を更新しました。",
+      });
+      return;
+    }
+
     try {
-      const response = await fetch(`http://localhost:8000/api/projects/${activeProject.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${activeProject.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -573,8 +646,30 @@ export default function Home() {
     const confirmDelete = confirm(`プロジェクト「${activeProject.name}」を削除しますか？この操作は取り消せません。`);
     if (!confirmDelete) return;
 
+    // バックエンドが設定されていない場合はローカル削除のみ
+    if (!API_BASE_URL) {
+      const updatedProjects = projects.filter(p => p.id !== activeProject.id);
+      setProjects(updatedProjects);
+      
+      // 他のプロジェクトに切り替えまたは新規作成
+      if (updatedProjects.length > 0) {
+        setActiveProject(updatedProjects[0]);
+        loadProjectFlow(updatedProjects[0].id);
+      } else {
+        await handleCreateProject(true);
+      }
+      
+      setIsSettingsOpen(false);
+      
+      toast({
+        title: "プロジェクト削除完了",
+        description: "ローカルでプロジェクトを削除しました。",
+      });
+      return;
+    }
+
     try {
-      const response = await fetch(`http://localhost:8000/api/projects/${activeProject.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/projects/${activeProject.id}`, {
         method: "DELETE",
       });
       
