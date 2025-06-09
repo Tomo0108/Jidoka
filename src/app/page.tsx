@@ -80,6 +80,11 @@ export default function Home() {
   const [editingProjectName, setEditingProjectName] = useState("");
   const [editingProjectDescription, setEditingProjectDescription] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // デバッグ用: サイドバーの状態をログ出力
+  useEffect(() => {
+    console.log('Sidebar state:', isSidebarOpen);
+  }, [isSidebarOpen]);
 
   const setFlow = useFlowStore((state) => state.setFlow);
   const loadProjectFlow = useFlowStore((state) => state.loadProjectFlow);
@@ -724,16 +729,16 @@ export default function Home() {
         {/* Mobile sidebar overlay */}
         {isSidebarOpen && (
           <div 
-            className="fixed inset-0 bg-black/50 z-20 md:hidden" 
+            className="fixed inset-0 bg-black/50 z-20 block md:hidden" 
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
         
         <aside className={cn(
-          "w-72 flex-col border-r bg-muted/20 p-4 transition-transform duration-200 ease-in-out",
-          "md:relative md:translate-x-0",
+          "w-72 flex flex-col border-r bg-muted/20 p-4 transition-transform duration-200 ease-in-out",
           "fixed inset-y-0 left-0 z-30",
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          "sidebar-desktop",
+          isSidebarOpen ? "sidebar-mobile-shown" : "sidebar-mobile-hidden"
         )}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -749,7 +754,7 @@ export default function Home() {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="mobile-close-button"
               onClick={() => setIsSidebarOpen(false)}
             >
               <X className="h-5 w-5" />
@@ -796,13 +801,13 @@ export default function Home() {
           </ScrollArea>
         </aside>
 
-        <div className="flex flex-1 flex-col h-screen">
+        <div className="flex flex-1 flex-col h-screen md:ml-0">
           <header className="sticky top-0 z-10 flex h-[57px] items-center gap-2 md:gap-4 border-b bg-background px-2 md:px-4 shadow-sm">
             {/* Mobile menu button */}
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="mobile-menu-button"
               onClick={() => setIsSidebarOpen(true)}
             >
               <Menu className="h-5 w-5" />

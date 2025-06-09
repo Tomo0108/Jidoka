@@ -155,6 +155,40 @@
   .react-flow__controls-button {
     @apply min-h-[44px] min-w-[44px];
   }
+
+  /* モバイル用サイドバー確実に隠す */
+  .sidebar-mobile-hidden {
+    transform: translateX(-100%) !important;
+  }
+  
+  /* モバイル用サイドバー確実に表示 */
+  .sidebar-mobile-shown {
+    transform: translateX(0) !important;
+  }
+  
+  /* モバイル用ハンバーガーメニュー確実に表示 */
+  .mobile-menu-button {
+    display: flex !important;
+  }
+}
+
+/* デスクトップ対応 */
+@media (min-width: 769px) {
+  /* デスクトップではハンバーガーメニューを隠す */
+  .mobile-menu-button {
+    display: none !important;
+  }
+  
+  /* デスクトップでは閉じるボタンを隠す */
+  .mobile-close-button {
+    display: none !important;
+  }
+  
+  /* デスクトップではサイドバーを常に表示 */
+  .sidebar-desktop {
+    position: relative !important;
+    transform: translateX(0) !important;
+  }
 }
 
 /* PWA対応 - セーフエリア */
