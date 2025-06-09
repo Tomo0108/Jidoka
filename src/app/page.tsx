@@ -42,10 +42,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface Message {
   text: string;
   sender: "user" | "ai";
+  description?: string;
 }
 
 interface Project {
@@ -63,6 +65,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [mainView, setMainView] = useState<'chat' | 'code' | 'flow'>('chat');
   
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
   // API base URL - 開発環境ではlocalhost、本番環境では適切なURLを使用
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || (
     typeof window !== 'undefined' && window.location.hostname === 'localhost' 
@@ -80,29 +84,7 @@ export default function Home() {
   const [editingProjectName, setEditingProjectName] = useState("");
   const [editingProjectDescription, setEditingProjectDescription] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   
-  // 画面サイズの検出
-  useEffect(() => {
-    const checkMobile = () => {
-      const width = window.innerWidth;
-      const mobile = width < 768;
-      setIsMobile(mobile);
-      console.log(`Window width: ${width}px, Is mobile: ${mobile}`);
-      
-      // モバイルでない場合はサイドバーを閉じる
-      if (!mobile && isSidebarOpen) {
-        setIsSidebarOpen(false);
-      }
-    };
-
-    if (typeof window !== 'undefined') {
-      checkMobile();
-      window.addEventListener('resize', checkMobile);
-      return () => window.removeEventListener('resize', checkMobile);
-    }
-  }, [isSidebarOpen]);
-
   // デバッグ用: サイドバーの状態をログ出力
   useEffect(() => {
     console.log('=== DEBUG INFO ===');
@@ -753,29 +735,20 @@ export default function Home() {
     <TooltipProvider>
       <div className="flex h-screen w-full bg-background text-foreground">
         {/* Mobile sidebar overlay */}
-        {isSidebarOpen && isMobile && (
+        {isMobile && isSidebarOpen && (
           <div 
             className="fixed inset-0 bg-black/50 z-20" 
-            onClick={() => {
-              console.log('Overlay clicked!');
-              setIsSidebarOpen(false);
-            }}
+            onClick={() => setIsSidebarOpen(false)}
           />
         )}
         
         <aside 
           className={cn(
-            "w-72 flex flex-col border-r bg-muted/20 p-4 transition-transform duration-200 ease-in-out",
-            "fixed inset-y-0 left-0 z-30 md:relative",
-            "sidebar-desktop",
-            isSidebarOpen ? "sidebar-mobile-shown" : "sidebar-mobile-hidden"
+            "w-72 flex flex-col border-r bg-muted/20 p-4 transition-transform duration-300 ease-in-out",
+            "fixed inset-y-0 left-0 z-30",
+            "md:relative md:translate-x-0",
+            isSidebarOpen ? 'translate-x-0' : '-translate-x-full',
           )}
-          style={{
-            transform: isMobile 
-              ? (isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)') 
-              : 'translateX(0)',
-            position: isMobile ? 'fixed' : 'relative'
-          }}
         >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -788,19 +761,14 @@ export default function Home() {
               />
               <h2 className="text-2xl font-bold tracking-tight">Jido-ka</h2>
             </div>
-            {isMobile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="mobile-close-button"
-                onClick={() => {
-                  console.log('Close button clicked!');
-                  setIsSidebarOpen(false);
-                }}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
           </div>
           <div className="mt-4">
             <Button className="w-full" onClick={() => handleCreateProject()}>
@@ -843,22 +811,17 @@ export default function Home() {
           </ScrollArea>
         </aside>
 
-        <div className="flex flex-1 flex-col h-screen md:ml-0">
+        <div className="flex flex-1 flex-col h-screen">
           <header className="sticky top-0 z-10 flex h-[57px] items-center gap-2 md:gap-4 border-b bg-background px-2 md:px-4 shadow-sm">
             {/* Mobile menu button */}
-            {isMobile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="mobile-menu-button flex"
-                onClick={() => {
-                  console.log('Hamburger menu clicked!');
-                  setIsSidebarOpen(true);
-                }}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
             
             <h1 
               className="text-lg md:text-xl font-semibold truncate cursor-pointer flex-1 min-w-0"
