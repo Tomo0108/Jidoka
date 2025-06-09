@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Bot, User, CornerDownLeft, PlusCircle, Settings, Share2, FolderKanban, LoaderCircle, FileCode, Download, Workflow, MessageSquarePlus, Undo, Redo, MessageSquare, Link, Code, Twitter, Facebook, Linkedin, Edit, Trash2, Copy, Eye, BookOpen, Terminal, FileText, Zap, CheckCircle } from "lucide-react";
+import { Bot, User, CornerDownLeft, PlusCircle, Settings, Share2, FolderKanban, LoaderCircle, FileCode, Download, Workflow, MessageSquarePlus, Undo, Redo, MessageSquare, Link, Code, Twitter, Facebook, Linkedin, Edit, Trash2, Copy, Eye, BookOpen, Terminal, FileText, Zap, CheckCircle, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -72,6 +72,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState("");
   const [editingProjectDescription, setEditingProjectDescription] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const setFlow = useFlowStore((state) => state.setFlow);
   const loadProjectFlow = useFlowStore((state) => state.loadProjectFlow);
@@ -625,16 +626,39 @@ export default function Home() {
   return (
     <TooltipProvider>
       <div className="flex h-screen w-full bg-background text-foreground">
-        <aside className="w-72 flex-col border-r bg-muted/20 p-4">
-          <div className="flex items-center justify-start gap-2">
-            <Image
-              src="/img/logo_192.png"
-              alt="Jido-ka Logo"
-              width={40}
-              height={40}
-              className="rounded-md"
-            />
-            <h2 className="text-2xl font-bold tracking-tight">Jido-ka</h2>
+        {/* Mobile sidebar overlay */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-20 md:hidden" 
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+        
+        <aside className={cn(
+          "w-72 flex-col border-r bg-muted/20 p-4 transition-transform duration-200 ease-in-out",
+          "md:relative md:translate-x-0",
+          "fixed inset-y-0 left-0 z-30",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Image
+                src="/img/logo_192.png"
+                alt="Jido-ka Logo"
+                width={40}
+                height={40}
+                className="rounded-md"
+              />
+              <h2 className="text-2xl font-bold tracking-tight">Jido-ka</h2>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
           </div>
           <div className="mt-4">
             <Button className="w-full" onClick={() => handleCreateProject()}>
@@ -678,20 +702,30 @@ export default function Home() {
         </aside>
 
         <div className="flex flex-1 flex-col h-screen">
-          <header className="sticky top-0 z-10 flex h-[57px] items-center gap-4 border-b bg-background px-4 shadow-sm">
+          <header className="sticky top-0 z-10 flex h-[57px] items-center gap-2 md:gap-4 border-b bg-background px-2 md:px-4 shadow-sm">
+            {/* Mobile menu button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            
             <h1 
-              className="text-xl font-semibold truncate cursor-pointer"
+              className="text-lg md:text-xl font-semibold truncate cursor-pointer flex-1 min-w-0"
               onClick={() => setMainView('chat')}
             >
               {activeProject ? activeProject.name : "プロジェクトを選択してください"}
             </h1>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
                     variant={mainView === 'chat' ? 'default' : 'outline'}
                     size="icon" 
-                    className="h-8 w-8" 
+                    className="h-8 w-8 md:h-8 md:w-8" 
                     onClick={() => setMainView('chat')}
                   >
                     <MessageSquare className="h-4 w-4" />
@@ -705,7 +739,7 @@ export default function Home() {
                   <Button 
                     variant={mainView === 'flow' ? 'default' : 'outline'}
                     size="icon" 
-                    className="h-8 w-8" 
+                    className="h-8 w-8 md:h-8 md:w-8" 
                     onClick={() => setMainView('flow')}
                   >
                     <Workflow className="h-4 w-4" />
@@ -719,7 +753,7 @@ export default function Home() {
                   <Button 
                     variant={mainView === 'code' ? 'default' : 'outline'}
                     size="icon" 
-                    className="h-8 w-8" 
+                    className="h-8 w-8 md:h-8 md:w-8" 
                     onClick={() => setMainView('code')}
                   >
                     <FileCode className="h-4 w-4" />
@@ -730,7 +764,7 @@ export default function Home() {
               </Tooltip>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-8 w-8">
+                  <Button variant="outline" size="icon" className="h-8 w-8 md:h-8 md:w-8">
                     <Share2 className="h-4 w-4" />
                     <span className="sr-only">Share</span>
                   </Button>
@@ -766,7 +800,7 @@ export default function Home() {
               </DropdownMenu>
               <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleOpenSettings}>
+                  <Button variant="outline" size="icon" className="h-8 w-8 md:h-8 md:w-8" onClick={handleOpenSettings}>
                     <Settings className="h-4 w-4" />
                     <span className="sr-only">Settings</span>
                   </Button>
@@ -832,33 +866,36 @@ export default function Home() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              <div className="hidden md:flex md:gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={() => undo()} disabled={pastStates.length === 0}>
+                      <Undo className="h-4 w-4" />
+                      <span className="sr-only">元に戻す</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>元に戻す</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={() => redo()} disabled={futureStates.length === 0}>
+                      <Redo className="h-4 w-4" />
+                      <span className="sr-only">やり直す</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>やり直す</TooltipContent>
+                </Tooltip>
+              </div>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={() => undo()} disabled={pastStates.length === 0}>
-                    <Undo className="h-4 w-4" />
-                    <span className="sr-only">元に戻す</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>元に戻す</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={() => redo()} disabled={futureStates.length === 0}>
-                    <Redo className="h-4 w-4" />
-                    <span className="sr-only">やり直す</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>やり直す</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button onClick={handleGenerateFlow} disabled={isGenerating}>
+                  <Button onClick={handleGenerateFlow} disabled={isGenerating} className="hidden sm:flex">
                     {isGenerating ? (
                       <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
                       <MessageSquarePlus className="mr-2 h-4 w-4" />
                     )}
-                    フロー生成
+                    <span className="hidden lg:inline">フロー生成</span>
+                    <span className="lg:hidden">生成</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -872,45 +909,57 @@ export default function Home() {
 
             {mainView === 'flow' ? (
               <ErrorBoundary>
-                <ResizablePanelGroup direction="horizontal" className="h-full w-full">
-                  <ResizablePanel defaultSize={20} minSize={15}>
+                {/* Desktop layout */}
+                <div className="hidden md:block h-full">
+                  <ResizablePanelGroup direction="horizontal" className="h-full w-full">
+                    <ResizablePanel defaultSize={20} minSize={15}>
+                      <ErrorBoundary>
+                        <Sidebar />
+                      </ErrorBoundary>
+                    </ResizablePanel>
+                    <ResizableHandle withHandle />
+                    <ResizablePanel defaultSize={80}>
+                       <ResizablePanelGroup direction="horizontal">
+                          <ResizablePanel defaultSize={75}>
+                            <ErrorBoundary>
+                              <Flowchart />
+                            </ErrorBoundary>
+                          </ResizablePanel>
+                          <ResizableHandle withHandle />
+                          <ResizablePanel defaultSize={25}>
+                            <ErrorBoundary>
+                              <Inspector />
+                            </ErrorBoundary>
+                          </ResizablePanel>
+                       </ResizablePanelGroup>
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                </div>
+                
+                {/* Mobile layout */}
+                <div className="md:hidden h-full flex flex-col">
+                  <div className="flex-1">
                     <ErrorBoundary>
-                      <Sidebar />
+                      <Flowchart />
                     </ErrorBoundary>
-                  </ResizablePanel>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={80}>
-                     <ResizablePanelGroup direction="horizontal">
-                        <ResizablePanel defaultSize={75}>
-                          <ErrorBoundary>
-                            <Flowchart />
-                          </ErrorBoundary>
-                        </ResizablePanel>
-                        <ResizableHandle withHandle />
-                        <ResizablePanel defaultSize={25}>
-                          <ErrorBoundary>
-                            <Inspector />
-                          </ErrorBoundary>
-                        </ResizablePanel>
-                     </ResizablePanelGroup>
-                  </ResizablePanel>
-                </ResizablePanelGroup>
+                  </div>
+                </div>
               </ErrorBoundary>
             ) : mainView === 'chat' ? (
-              <main className="h-full p-4 md:p-6">
+              <main className="h-full p-3 md:p-6">
                 <ScrollArea className="h-full" ref={scrollAreaRef}>
-                  <div className="space-y-6">
+                  <div className="space-y-4 md:space-y-6">
                     {messages.map((msg, index) => (
                       <div
                         key={index}
-                        className={cn("flex items-start gap-4", msg.sender === "user" ? "flex-row-reverse" : "")}
+                        className={cn("flex items-start gap-3 md:gap-4", msg.sender === "user" ? "flex-row-reverse" : "")}
                       >
-                        <Avatar className="h-9 w-9">
-                          <AvatarFallback>{msg.sender === 'ai' ? <Bot size={20} /> : <User size={20} />}</AvatarFallback>
+                        <Avatar className="h-8 w-8 md:h-9 md:w-9 flex-shrink-0">
+                          <AvatarFallback>{msg.sender === 'ai' ? <Bot size={18} /> : <User size={18} />}</AvatarFallback>
                         </Avatar>
                         <div
                           className={cn(
-                            "max-w-2xl rounded-lg p-3 text-base prose",
+                            "max-w-[85%] sm:max-w-lg md:max-w-2xl rounded-lg p-3 text-sm md:text-base prose",
                             msg.sender === "user" 
                               ? "bg-primary text-primary-foreground" 
                               : "bg-muted dark:prose-invert"
@@ -923,9 +972,9 @@ export default function Home() {
                       </div>
                     ))}
                     {isLoading && messages.length > 0 && messages[messages.length-1].sender === 'user' && (
-                      <div className="flex items-start gap-4">
-                        <Avatar className="h-9 w-9">
-                          <AvatarFallback><Bot size={20} /></AvatarFallback>
+                      <div className="flex items-start gap-3 md:gap-4">
+                        <Avatar className="h-8 w-8 md:h-9 md:w-9 flex-shrink-0">
+                          <AvatarFallback><Bot size={18} /></AvatarFallback>
                         </Avatar>
                         <div className="flex items-center space-x-2">
                           <LoaderCircle className="animate-spin h-5 w-5 text-muted-foreground" />
@@ -938,30 +987,30 @@ export default function Home() {
               </main>
             ) : mainView === 'code' ? (
               <div className="flex-1 overflow-y-auto">
-                <div className="max-w-6xl mx-auto p-6 space-y-6">
+                <div className="max-w-6xl mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
                   {/* ヘッダー */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                      <h1 className="text-2xl font-semibold">生成されたコード</h1>
+                      <h1 className="text-xl md:text-2xl font-semibold">生成されたコード</h1>
                       <p className="text-sm text-muted-foreground mt-1">{generatedCode.filename}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="outline" onClick={handleCopyCode} size="sm">
-                        <Copy className="h-4 w-4 mr-2" />
-                        コピー
+                        <Copy className="h-4 w-4 md:mr-2" />
+                        <span className="hidden md:inline">コピー</span>
                       </Button>
                       <Button onClick={handleDownloadCode} size="sm">
-                        <Download className="h-4 w-4 mr-2" />
-                        ダウンロード
+                        <Download className="h-4 w-4 md:mr-2" />
+                        <span className="hidden md:inline">ダウンロード</span>
                       </Button>
                     </div>
                   </div>
 
                   {/* メインコンテンツ */}
-                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
                     
                     {/* サイドパネル */}
-                    <div className="lg:col-span-1 space-y-6">
+                    <div className="lg:col-span-1 space-y-4 md:space-y-6">
                       {/* コード説明 */}
                       <div>
                         <h3 className="text-sm font-medium mb-3">説明</h3>
@@ -1008,15 +1057,15 @@ export default function Home() {
                         </CardHeader>
                         <Separator />
                         <CardContent className="p-0">
-                          <div className="relative max-h-[600px] overflow-auto">
-                            <pre className="p-4 text-sm font-mono leading-relaxed">
+                          <div className="relative max-h-[400px] md:max-h-[600px] overflow-auto">
+                            <pre className="p-3 md:p-4 text-xs md:text-sm font-mono leading-relaxed">
                               <code>
                                 {generatedCode.code.split('\n').map((line, index) => (
                                   <div key={index} className="flex">
-                                    <span className="select-none w-8 text-right pr-3 text-muted-foreground/50 text-xs leading-relaxed">
+                                    <span className="select-none w-6 md:w-8 text-right pr-2 md:pr-3 text-muted-foreground/50 text-xs leading-relaxed">
                                       {index + 1}
                                     </span>
-                                    <span className="flex-1">{line || ' '}</span>
+                                    <span className="flex-1 break-all">{line || ' '}</span>
                                   </div>
                                 ))}
                               </code>
@@ -1035,20 +1084,20 @@ export default function Home() {
             )}
           </div>
 
-          <footer className="sticky bottom-0 border-t bg-background/95 p-4 backdrop-blur-sm">
+          <footer className="sticky bottom-0 border-t bg-background/95 p-3 md:p-4 backdrop-blur-sm">
             <div className="relative">
               <form onSubmit={handleSendMessage}>
                 <Input
                   placeholder="メッセージを送信..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  className="pr-16 h-12 text-base font-chat"
+                  className="pr-12 md:pr-16 h-10 md:h-12 text-sm md:text-base font-chat"
                   disabled={isLoading}
                 />
                 <Button
                   type="submit"
                   size="icon"
-                  className="absolute right-12 top-1/2 -translate-y-1/2 h-8 w-8"
+                  className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 h-8 w-8"
                   disabled={isLoading || input.trim() === ""}
                 >
                   <CornerDownLeft className="h-4 w-4" />
