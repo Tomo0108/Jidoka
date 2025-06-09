@@ -65,7 +65,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [mainView, setMainView] = useState<'chat' | 'code' | 'flow'>('chat');
   
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 
   // API base URL - 開発環境ではlocalhost、本番環境では適切なURLを使用
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || (
@@ -83,8 +85,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState("");
   const [editingProjectDescription, setEditingProjectDescription] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
+
   // デバッグ用: サイドバーの状態をログ出力
   useEffect(() => {
     console.log('=== DEBUG INFO ===');
@@ -93,6 +94,17 @@ export default function Home() {
     console.log('Window width:', typeof window !== 'undefined' ? window.innerWidth : 'SSR');
     console.log('=================');
   }, [isSidebarOpen, isMobile]);
+
+  useEffect(() => {
+    // isMobile の状態に基づいてサイドバーの表示を制御
+    if (isMobile) {
+      setIsSidebarVisible(isSidebarOpen);
+    } else {
+      // デスクトップでは常に表示（ただしDOM上は常に存在）
+      setIsSidebarVisible(true);
+      setIsSidebarOpen(false); // モバイル用の開閉状態はリセット
+    }
+  }, [isMobile, isSidebarOpen]);
 
   const setFlow = useFlowStore((state) => state.setFlow);
   const loadProjectFlow = useFlowStore((state) => state.loadProjectFlow);
@@ -733,7 +745,7 @@ export default function Home() {
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen w-full bg-background text-foreground">
+      <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
         {/* Mobile sidebar overlay */}
         {isMobile && isSidebarOpen && (
           <div 
@@ -742,12 +754,13 @@ export default function Home() {
           />
         )}
         
+        {/* Sidebar */}
         <aside 
           className={cn(
-            "w-72 flex-col border-r bg-muted/20 p-4 transition-transform duration-300 ease-in-out md:flex",
-            "fixed inset-y-0 left-0 z-30",
-            "md:relative md:translate-x-0",
-            isSidebarOpen ? 'translate-x-0' : '-translate-x-full',
+            "w-72 flex flex-col border-r bg-muted/20 p-4 transition-transform duration-300 ease-in-out z-30",
+            isMobile 
+              ? `fixed inset-y-0 left-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+              : "relative translate-x-0"
           )}
         >
           <div className="flex items-center justify-between gap-2">
@@ -814,7 +827,7 @@ export default function Home() {
         </aside>
 
         <div className="flex flex-1 flex-col h-screen">
-          <header className="sticky top-0 z-10 flex h-[57px] items-center gap-2 border-b bg-background px-4 shadow-sm">
+          <header className="sticky top-0 z-10 flex h-[57px] items-center gap-2 border-b bg-background px-4 shadow-sm flex-shrink-0">
             {isMobile && (
               <Button
                 variant="ghost"
