@@ -744,7 +744,7 @@ export default function Home() {
         
         <aside 
           className={cn(
-            "w-72 flex flex-col border-r bg-muted/20 p-4 transition-transform duration-300 ease-in-out",
+            "w-72 flex-col border-r bg-muted/20 p-4 transition-transform duration-300 ease-in-out md:flex",
             "fixed inset-y-0 left-0 z-30",
             "md:relative md:translate-x-0",
             isSidebarOpen ? 'translate-x-0' : '-translate-x-full',
@@ -758,17 +758,19 @@ export default function Home() {
                 width={40}
                 height={40}
                 className="rounded-md"
+                priority
               />
               <h2 className="text-2xl font-bold tracking-tight">Jido-ka</h2>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsSidebarOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            )}
           </div>
           <div className="mt-4">
             <Button className="w-full" onClick={() => handleCreateProject()}>
@@ -812,19 +814,19 @@ export default function Home() {
         </aside>
 
         <div className="flex flex-1 flex-col h-screen">
-          <header className="sticky top-0 z-10 flex h-[57px] items-center gap-2 md:gap-4 border-b bg-background px-2 md:px-4 shadow-sm">
-            {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
+          <header className="sticky top-0 z-10 flex h-[57px] items-center gap-2 border-b bg-background px-4 shadow-sm">
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            )}
             
             <h1 
-              className="text-lg md:text-xl font-semibold truncate cursor-pointer flex-1 min-w-0"
+              className="text-xl font-semibold truncate cursor-pointer"
               onClick={() => setMainView('chat')}
             >
               {activeProject ? activeProject.name : "プロジェクトを選択してください"}
