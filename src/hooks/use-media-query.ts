@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 /**
- * メディアクエリに一致するかどうかを判定するカスタムフック
+ * メディアクエリに一致するかどうかを判定するカスタムフック（SSR/ハイドレーション対応）
  * @param query - ' (max-width: 768px)' のようなメディアクエリ文字列
  * @returns メディアクエリに一致するかどうかの真偽値
  */
@@ -10,26 +10,26 @@ export function useMediaQuery(query: string): boolean {
 
   useEffect(() => {
     const media = window.matchMedia(query);
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
     const listener = () => setMatches(media.matches);
-
-    // Safari < 14 では addEventListener が使えないため、addListener を使用
+    
+    // Safari < 14 and other older browsers
     if (media.addEventListener) {
       media.addEventListener('change', listener);
     } else {
-      media.addListener(listener); // Deprecated
+      media.addListener(listener);
     }
-
-    // 初回チェック
-    listener();
 
     return () => {
       if (media.removeEventListener) {
         media.removeEventListener('change', listener);
       } else {
-        media.removeListener(listener); // Deprecated
+        media.removeListener(listener);
       }
     };
-  }, [query]);
+  }, [matches, query]);
 
   return matches;
 } 
