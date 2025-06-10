@@ -1217,6 +1217,20 @@ export default function Home() {
     </div>
     <Toaster />
     <PWAInstallPrompt />
+    <div style={{
+        position: 'fixed',
+        bottom: '10px',
+        right: '10px',
+        backgroundColor: 'rgba(255, 0, 0, 0.8)',
+        color: 'white',
+        padding: '10px',
+        zIndex: 9999,
+        fontSize: '14px',
+        borderRadius: '8px',
+        fontFamily: 'monospace',
+      }}>
+        <p>isMobile: <strong>{isMobile.toString()}</strong></p>
+    </div>
     </TooltipProvider>
   );
 }
