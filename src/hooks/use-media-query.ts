@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react'
 
 /**
  * A hook that provides a boolean value indicating whether a media query is matched.
- * It is SSR-safe and handles hydration mismatches.
+ * It is SSR-safe and handles hydration mismatches by running only on the client.
  *
- * @param query The media query to match.
- * @returns `true` if the media query is matched, `false` otherwise.
+ * @param query The media query to match, e.g., '(max-width: 767px)'.
+ * @returns `true` if the media query is matched after hydration, otherwise `false`.
  */
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false)
@@ -13,20 +13,21 @@ export function useMediaQuery(query: string): boolean {
   useEffect(() => {
     const media = window.matchMedia(query)
     
-    const listener = () => {
-      setMatches(media.matches)
+    const listener = (event: MediaQueryListEvent) => {
+      setMatches(event.matches)
     }
 
-    // This effect runs only on the client, after hydration.
-    // So we can safely update the state with the initial value.
-    listener()
+    // Set the initial value on the client after mounting
+    setMatches(media.matches)
 
+    // Add the event listener
     media.addEventListener('change', listener)
 
+    // Cleanup the event listener on unmount
     return () => {
       media.removeEventListener('change', listener)
     }
-  }, [query]) // The effect re-runs only if the query string changes.
+  }, [query]) // Effect runs only once on mount and when query changes
 
   return matches
 } 
