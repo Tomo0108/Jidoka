@@ -20,10 +20,10 @@ import { Node, Edge } from 'reactflow';
 import { CustomNodeData, CustomEdgeData } from '@/lib/types';
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
@@ -69,8 +69,8 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || (
-    typeof window !== 'undefined' && window.location.hostname === 'localhost' 
-      ? 'http://localhost:8000' 
+    typeof window !== 'undefined' && window.location.hostname === 'localhost'
+      ? 'http://localhost:8000'
       : ''
   );
   const [generatedCode] = useState({
@@ -164,10 +164,10 @@ export default function Home() {
     if (!newProjectName) return;
 
     if (!API_BASE_URL) {
-      const newProject: Project = { 
+      const newProject: Project = {
         id: Date.now(),
-        name: newProjectName, 
-        description: "オフラインプロジェクト" 
+        name: newProjectName,
+        description: "オフラインプロジェクト"
       };
       setProjects(prev => [newProject, ...prev]);
       
@@ -197,10 +197,10 @@ export default function Home() {
       loadProjectFlow(newProject.id);
     } catch (error) {
       console.error("Failed to create project:", error);
-      const newProject: Project = { 
+      const newProject: Project = {
         id: Date.now(),
-        name: newProjectName, 
-        description: "オフラインプロジェクト" 
+        name: newProjectName,
+        description: "オフラインプロジェクト"
       };
       setProjects(prev => [newProject, ...prev]);
       
@@ -229,7 +229,13 @@ export default function Home() {
 
   useEffect(() => {
     const fetchProjects = async () => {
-      if (!API_BASE_URL) {
+      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || (
+        typeof window !== 'undefined' && window.location.hostname === 'localhost'
+          ? 'http://localhost:8000'
+          : ''
+      );
+
+      if (!apiUrl) {
         const fallbackProject: Project = { id: 1, name: "Demo Project", description: "オフラインデモプロジェクト" };
         setProjects([fallbackProject]);
         setActiveProject(fallbackProject);
@@ -238,7 +244,7 @@ export default function Home() {
       }
 
       try {
-        const response = await fetch(`${API_BASE_URL}/api/projects`);
+        const response = await fetch(`${apiUrl}/api/projects`);
         const data: Project[] = await response.json();
         setProjects(data);
         if (data.length > 0 && data[0]) {
@@ -246,7 +252,7 @@ export default function Home() {
           loadProjectFlow(data[0].id);
         } else {
           try {
-            const createResponse = await fetch(`${API_BASE_URL}/api/projects`, {
+            const createResponse = await fetch(`${apiUrl}/api/projects`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ name: "New Project" }),
@@ -272,13 +278,7 @@ export default function Home() {
       }
     };
     fetchProjects();
-  }, [loadProjectFlow, API_BASE_URL]);
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
-    }
-  }, [messages]);
+  }, [loadProjectFlow]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -286,14 +286,20 @@ export default function Home() {
       setIsLoading(true);
       setMessages([]);
       
-      if (!API_BASE_URL) {
+      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || (
+        typeof window !== 'undefined' && window.location.hostname === 'localhost'
+          ? 'http://localhost:8000'
+          : ''
+      );
+
+      if (!apiUrl) {
         setMessages([]);
         setIsLoading(false);
         return;
       }
 
       try {
-        const response = await fetch(`${API_BASE_URL}/api/projects/${activeProject.id}/messages`);
+        const response = await fetch(`${apiUrl}/api/projects/${activeProject.id}/messages`);
         const data: Message[] = await response.json();
         setMessages(data);
       } catch (error) {
@@ -306,7 +312,7 @@ export default function Home() {
     if (mainView === 'chat') {
       fetchMessages();
     }
-  }, [activeProject, mainView, API_BASE_URL]);
+  }, [activeProject, mainView]);
 
   const handleGenerateFlow = async () => {
     if (!input.trim()) return;
@@ -318,13 +324,13 @@ export default function Home() {
 
     const mockApiResponse: { nodes: Node<CustomNodeData>[]; edges: Edge<CustomEdgeData>[] } = {
       nodes: [
-        { id: '1', type: 'custom', position: { x: 400, y: 50 }, data: { id: '1', shape: 'startEnd', label: '顧客からの問い合わせ', description: '電話またはメールで受け付け', file: null, onChange: (data) => {} } },
-        { id: '2', type: 'custom', position: { x: 400, y: 200 }, data: { id: '2', shape: 'predefinedProcess', label: '問い合わせ内容の記録', description: 'CRMシステムに入力', file: null, onChange: (data) => {} } },
-        { id: '3', type: 'custom', position: { x: 400, y: 350 }, data: { id: '3', shape: 'diamond', label: '緊急案件か？', description: 'SLA（サービスレベル契約）に基づく', file: null, onChange: (data) => {} } },
-        { id: '4', type: 'custom', position: { x: 150, y: 500 }, data: { id: '4', shape: 'rectangle', label: '担当者へ即時通知', description: 'チャットとメールで通知', file: null, onChange: (data) => {} } },
-        { id: '5', type: 'custom', position: { x: 650, y: 500 }, data: { id: '5', shape: 'rectangle', label: '通常キューに追加', description: '翌営業日までに対応', file: null, onChange: (data) => {} } },
-        { id: '6', type: 'custom', position: { x: 400, y: 650 }, data: { id: '6', shape: 'document', label: '対応記録の作成', description: '対応結果をまとめる', file: null, onChange: (data) => {} } },
-        { id: '7', type: 'custom', position: { x: 400, y: 800 }, data: { id: '7', shape: 'startEnd', label: 'クローズ', description: '顧客に完了を通知', file: null, onChange: (data) => {} } },
+        { id: '1', type: 'custom', position: { x: 400, y: 50 }, data: { id: '1', shape: 'startEnd', label: '顧客からの問い合わせ', description: '電話またはメールで受け付け', file: null, onChange: () => {} } },
+        { id: '2', type: 'custom', position: { x: 400, y: 200 }, data: { id: '2', shape: 'predefinedProcess', label: '問い合わせ内容の記録', description: 'CRMシステムに入力', file: null, onChange: () => {} } },
+        { id: '3', type: 'custom', position: { x: 400, y: 350 }, data: { id: '3', shape: 'diamond', label: '緊急案件か？', description: 'SLA（サービスレベル契約）に基づく', file: null, onChange: () => {} } },
+        { id: '4', type: 'custom', position: { x: 150, y: 500 }, data: { id: '4', shape: 'rectangle', label: '担当者へ即時通知', description: 'チャットとメールで通知', file: null, onChange: () => {} } },
+        { id: '5', type: 'custom', position: { x: 650, y: 500 }, data: { id: '5', shape: 'rectangle', label: '通常キューに追加', description: '翌営業日までに対応', file: null, onChange: () => {} } },
+        { id: '6', type: 'custom', position: { x: 400, y: 650 }, data: { id: '6', shape: 'document', label: '対応記録の作成', description: '対応結果をまとめる', file: null, onChange: () => {} } },
+        { id: '7', type: 'custom', position: { x: 400, y: 800 }, data: { id: '7', shape: 'startEnd', label: 'クローズ', description: '顧客に完了を通知', file: null, onChange: () => {} } },
       ],
       edges: [
         { id: 'e1-2', source: '1', target: '2', type: 'step', animated: true, data: { id: 'e1-2' } },
@@ -352,9 +358,9 @@ export default function Home() {
     setIsLoading(true);
 
     if (!API_BASE_URL) {
-      const mockResponse: Message = { 
-        text: "現在オフラインモードで動作しています。バックエンドサーバーが利用できないため、実際のAI応答は提供できませんが、フローチャート機能やその他の機能は引き続きご利用いただけます。", 
-        sender: "ai" 
+      const mockResponse: Message = {
+        text: "現在オフラインモードで動作しています。バックエンドサーバーが利用できないため、実際のAI応答は提供できませんが、フローチャート機能やその他の機能は引き続きご利用いただけます。",
+        sender: "ai"
       };
       setMessages((prev) => [...prev, mockResponse]);
       setIsLoading(false);
@@ -372,9 +378,9 @@ export default function Home() {
       setMessages((prev) => [...prev, aiResponse]);
     } catch (error) {
       console.error("Error sending message:", error);
-      const mockResponse: Message = { 
-        text: "現在オフラインモードで動作しています。バックエンドサーバーが利用できないため、実際のAI応答は提供できませんが、フローチャート機能やその他の機能は引き続きご利用いただけます。", 
-        sender: "ai" 
+      const mockResponse: Message = {
+        text: "現在オフラインモードで動作しています。バックエンドサーバーが利用できないため、実際のAI応答は提供できませんが、フローチャート機能やその他の機能は引き続きご利用いただけます。",
+        sender: "ai"
       };
       setMessages((prev) => [...prev, mockResponse]);
     } finally {
@@ -566,7 +572,7 @@ export default function Home() {
       const response = await fetch(`${API_BASE_URL}/api/projects/${activeProject.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: trimmedName,
           description: editingProjectDescription.trim()
         }),
@@ -701,16 +707,16 @@ export default function Home() {
       
       <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
         {isMobile && isSidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-20" 
+          <div
+            className="fixed inset-0 bg-black/50 z-20"
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
         
-        <aside 
+        <aside
           className={cn(
             "w-72 flex flex-col border-r bg-muted/20 p-4 transition-transform duration-300 ease-in-out z-30",
-            isMobile 
+            isMobile
               ? `fixed inset-y-0 left-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
               : "relative translate-x-0"
           )}
@@ -790,7 +796,7 @@ export default function Home() {
               </Button>
             )}
             
-            <h1 
+            <h1
               className={cn(
                 "font-semibold truncate cursor-pointer flex-1 min-w-0",
                 isMobile ? "text-lg" : "text-xl"
@@ -802,7 +808,7 @@ export default function Home() {
             <div className={cn("flex items-center", isMobile ? "gap-1" : "gap-2")}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
+                  <Button
                     variant={mainView === 'chat' ? 'default' : 'outline'}
                     size={isMobile ? "icon" : "default"}
                     className={isMobile ? "h-8 w-8" : ""}
@@ -816,7 +822,7 @@ export default function Home() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
+                  <Button
                     variant={mainView === 'flow' ? 'default' : 'outline'}
                     size={isMobile ? "icon" : "default"}
                     className={isMobile ? "h-8 w-8" : ""}
@@ -830,7 +836,7 @@ export default function Home() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
+                  <Button
                     variant={mainView === 'code' ? 'default' : 'outline'}
                     size={isMobile ? "icon" : "default"}
                     className={isMobile ? "h-8 w-8" : ""}
@@ -978,8 +984,8 @@ export default function Home() {
               
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    onClick={handleGenerateFlow} 
+                  <Button
+                    onClick={handleGenerateFlow}
                     disabled={isGenerating}
                     size={isMobile ? "icon" : "default"}
                     className={isMobile ? "h-8 w-8" : ""}
@@ -1054,8 +1060,8 @@ export default function Home() {
                           className={cn(
                             "rounded-lg p-3 prose",
                             isMobile ? "text-sm max-w-[85%]" : "text-base max-w-2xl",
-                            msg.sender === "user" 
-                              ? "bg-primary text-primary-foreground" 
+                            msg.sender === "user"
+                              ? "bg-primary text-primary-foreground"
                               : "bg-muted dark:prose-invert"
                           )}
                         >
@@ -1065,7 +1071,7 @@ export default function Home() {
                         </div>
                       </div>
                     ))}
-                    {isLoading && messages.length > 0 && messages[messages.length-1].sender === 'user' && (
+                    {isLoading && messages.length > 0 && messages[messages.length-1]?.sender === 'user' && (
                       <div className={cn("flex items-start", isMobile ? "gap-3" : "gap-4")}>
                         <Avatar className={cn(isMobile ? "h-8 w-8" : "h-9 w-9", "flex-shrink-0")}>
                           <AvatarFallback><Bot size={isMobile ? 18 : 20} /></AvatarFallback>
