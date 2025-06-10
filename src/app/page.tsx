@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Bot, User, CornerDownLeft, PlusCircle, Settings, Share2, FolderKanban, LoaderCircle, FileCode, Download, Workflow, MessageSquarePlus, Undo, Redo, MessageSquare, Link, Code, Twitter, Facebook, Linkedin, Edit, Trash2, Copy, Eye, BookOpen, Terminal, FileText, Zap, CheckCircle, Menu, X } from "lucide-react";
+import { Bot, User, CornerDownLeft, PlusCircle, Settings, Share2, FolderKanban, LoaderCircle, FileCode, Download, Workflow, MessageSquarePlus, Undo, Redo, MessageSquare, Link, Code, Twitter, Facebook, Linkedin, Edit, Trash2, Copy, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,7 +16,8 @@ import { Sidebar } from "@/components/Sidebar";
 import { Inspector } from "@/components/Inspector";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useFlowStore, useTemporalStore } from '@/hooks/useFlowStore';
-
+import { Node, Edge } from 'reactflow';
+import { CustomNodeData, CustomEdgeData } from '@/lib/types';
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -38,8 +39,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -67,13 +67,11 @@ export default function Home() {
   
   const isMobile = useMediaQuery('(max-width: 767px)');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 
-  // API base URL - 開発環境ではlocalhost、本番環境では適切なURLを使用
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || (
     typeof window !== 'undefined' && window.location.hostname === 'localhost' 
       ? 'http://localhost:8000' 
-      : '' // 本番環境ではバックエンドなしで動作
+      : ''
   );
   const [generatedCode] = useState({
     explanation: "これは、ユーザーの指示に基づいてAIが生成したVBAコードのサンプルです。ボタンをクリックすると、メッセージボックスに「Hello, World!」と表示されます。",
@@ -86,26 +84,6 @@ export default function Home() {
   const [editingProjectName, setEditingProjectName] = useState("");
   const [editingProjectDescription, setEditingProjectDescription] = useState("");
 
-  // デバッグ用: サイドバーの状態をログ出力
-  useEffect(() => {
-    console.log('=== DEBUG INFO ===');
-    console.log('Sidebar state:', isSidebarOpen);
-    console.log('Is mobile:', isMobile);
-    console.log('Window width:', typeof window !== 'undefined' ? window.innerWidth : 'SSR');
-    console.log('=================');
-  }, [isSidebarOpen, isMobile]);
-
-  useEffect(() => {
-    // isMobile の状態に基づいてサイドバーの表示を制御
-    if (isMobile) {
-      setIsSidebarVisible(isSidebarOpen);
-    } else {
-      // デスクトップでは常に表示（ただしDOM上は常に存在）
-      setIsSidebarVisible(true);
-      setIsSidebarOpen(false); // モバイル用の開閉状態はリセット
-    }
-  }, [isMobile, isSidebarOpen]);
-
   const setFlow = useFlowStore((state) => state.setFlow);
   const loadProjectFlow = useFlowStore((state) => state.loadProjectFlow);
   const saveProjectFlow = useFlowStore((state) => state.saveProjectFlow);
@@ -115,16 +93,13 @@ export default function Home() {
   const pastStates = useTemporalStore(state => state.pastStates);
   const futureStates = useTemporalStore(state => state.futureStates);
 
-  // URLパラメーターからプロジェクトデータを読み込む
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const projectData = urlParams.get('project');
     const action = urlParams.get('action');
     const view = urlParams.get('view');
     
-    // PWAショートカットの処理
     if (action === 'new-project') {
-      // 新しいプロジェクト作成を非同期で実行
       const createNewProject = async () => {
         const newProjectName = prompt("Enter the name for the new project:", `Project ${projects.length + 1}`);
         if (!newProjectName) return;
@@ -144,7 +119,6 @@ export default function Home() {
         }
       };
       createNewProject();
-      // URLパラメーターをクリア
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
       return;
@@ -152,7 +126,6 @@ export default function Home() {
     
     if (view === 'flow') {
       setMainView('flow');
-      // URLパラメーターをクリア
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
       return;
@@ -162,11 +135,10 @@ export default function Home() {
       try {
         const decodedData = JSON.parse(decodeURIComponent(projectData));
         
-        // 共有されたプロジェクトデータをセット
         if (decodedData.project && decodedData.messages) {
           setActiveProject(decodedData.project);
           setMessages(decodedData.messages);
-          setMainView('chat'); // チャットビューに切り替え
+          setMainView('chat');
           
           toast({
             title: "プロジェクト読み込み完了",
@@ -174,7 +146,6 @@ export default function Home() {
           });
         }
         
-        // URLパラメーターをクリア（履歴を汚さないため）
         const newUrl = window.location.pathname;
         window.history.replaceState({}, '', newUrl);
       } catch (error) {
@@ -186,27 +157,24 @@ export default function Home() {
         });
       }
     }
-  }, [setFlow, toast]);
+  }, [projects.length, setFlow, toast, loadProjectFlow]);
 
   const handleCreateProject = useCallback(async (isInitial = false) => {
     const newProjectName = isInitial ? "New Project" : prompt("Enter the name for the new project:", `Project ${projects.length + 1}`);
     if (!newProjectName) return;
 
-    // バックエンドが設定されていない場合は直接ローカルモードを使用
     if (!API_BASE_URL) {
       const newProject: Project = { 
-        id: Date.now(), // 一意のIDとしてタイムスタンプを使用
+        id: Date.now(),
         name: newProjectName, 
         description: "オフラインプロジェクト" 
       };
       setProjects(prev => [newProject, ...prev]);
       
-      // 前のプロジェクトのフローを保存
       if (currentProjectId !== null) {
         saveProjectFlow(currentProjectId);
       }
       
-      // 新しいプロジェクトに切り替えてフローを読み込み
       setActiveProject(newProject);
       loadProjectFlow(newProject.id);
       return;
@@ -221,30 +189,25 @@ export default function Home() {
       const newProject: Project = await response.json();
       setProjects(prev => [newProject, ...prev]);
       
-      // 前のプロジェクトのフローを保存
       if (currentProjectId !== null) {
         saveProjectFlow(currentProjectId);
       }
       
-      // 新しいプロジェクトに切り替えてフローを読み込み
       setActiveProject(newProject);
       loadProjectFlow(newProject.id);
     } catch (error) {
       console.error("Failed to create project:", error);
-      // バックエンドが利用できない場合のフォールバック
       const newProject: Project = { 
-        id: Date.now(), // 一意のIDとしてタイムスタンプを使用
+        id: Date.now(),
         name: newProjectName, 
         description: "オフラインプロジェクト" 
       };
       setProjects(prev => [newProject, ...prev]);
       
-      // 前のプロジェクトのフローを保存
       if (currentProjectId !== null) {
         saveProjectFlow(currentProjectId);
       }
       
-      // 新しいプロジェクトに切り替えてフローを読み込み
       setActiveProject(newProject);
       loadProjectFlow(newProject.id);
       
@@ -256,19 +219,16 @@ export default function Home() {
   }, [projects.length, currentProjectId, saveProjectFlow, loadProjectFlow, toast, API_BASE_URL]);
 
   const handleProjectSwitch = useCallback((project: Project) => {
-    // 現在のプロジェクトのフローを保存
     if (currentProjectId !== null && currentProjectId !== project.id) {
       saveProjectFlow(currentProjectId);
     }
     
-    // 新しいプロジェクトに切り替えてフローを読み込み
     setActiveProject(project);
     loadProjectFlow(project.id);
   }, [currentProjectId, saveProjectFlow, loadProjectFlow]);
 
   useEffect(() => {
     const fetchProjects = async () => {
-      // バックエンドが設定されていない場合は直接ローカルモードを使用
       if (!API_BASE_URL) {
         const fallbackProject: Project = { id: 1, name: "Demo Project", description: "オフラインデモプロジェクト" };
         setProjects([fallbackProject]);
@@ -281,24 +241,22 @@ export default function Home() {
         const response = await fetch(`${API_BASE_URL}/api/projects`);
         const data: Project[] = await response.json();
         setProjects(data);
-        if (data.length > 0) {
+        if (data.length > 0 && data[0]) {
           setActiveProject(data[0]);
           loadProjectFlow(data[0].id);
         } else {
-          // プロジェクトが存在しない場合は新規作成
           try {
-            const response = await fetch(`${API_BASE_URL}/api/projects`, {
+            const createResponse = await fetch(`${API_BASE_URL}/api/projects`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ name: "New Project" }),
             });
-            const newProject: Project = await response.json();
+            const newProject: Project = await createResponse.json();
             setProjects([newProject]);
             setActiveProject(newProject);
             loadProjectFlow(newProject.id);
           } catch (error) {
             console.error("Failed to create initial project:", error);
-            // バックエンドが利用できない場合のフォールバック
             const fallbackProject: Project = { id: 1, name: "Demo Project", description: "オフラインデモプロジェクト" };
             setProjects([fallbackProject]);
             setActiveProject(fallbackProject);
@@ -307,7 +265,6 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Failed to fetch projects:", error);
-        // バックエンドが利用できない場合のフォールバック
         const fallbackProject: Project = { id: 1, name: "Demo Project", description: "オフラインデモプロジェクト" };
         setProjects([fallbackProject]);
         setActiveProject(fallbackProject);
@@ -329,7 +286,6 @@ export default function Home() {
       setIsLoading(true);
       setMessages([]);
       
-      // バックエンドが設定されていない場合はローカルモード
       if (!API_BASE_URL) {
         setMessages([]);
         setIsLoading(false);
@@ -342,7 +298,6 @@ export default function Home() {
         setMessages(data);
       } catch (error) {
         console.error("Failed to fetch messages:", error);
-        // バックエンドが利用できない場合は空配列のまま
         setMessages([]);
       } finally {
         setIsLoading(false);
@@ -359,33 +314,31 @@ export default function Home() {
     setIsGenerating(true);
     setInput('');
 
-    // --- AI/Backend API Call (Mock) ---
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const mockApiResponse = {
+    const mockApiResponse: { nodes: Node<CustomNodeData>[]; edges: Edge<CustomEdgeData>[] } = {
       nodes: [
-        { id: '1', type: 'custom', position: { x: 400, y: 50 }, data: { id: '1', shape: 'startEnd', label: '顧客からの問い合わせ', description: '電話またはメールで受け付け' } },
-        { id: '2', type: 'custom', position: { x: 400, y: 200 }, data: { id: '2', shape: 'predefinedProcess', label: '問い合わせ内容の記録', description: 'CRMシステムに入力' } },
-        { id: '3', type: 'custom', position: { x: 400, y: 350 }, data: { id: '3', shape: 'diamond', label: '緊急案件か？', description: 'SLA（サービスレベル契約）に基づく' } },
-        { id: '4', type: 'custom', position: { x: 150, y: 500 }, data: { id: '4', shape: 'rectangle', label: '担当者へ即時通知', description: 'チャットとメールで通知' } },
-        { id: '5', type: 'custom', position: { x: 650, y: 500 }, data: { id: '5', shape: 'rectangle', label: '通常キューに追加', description: '翌営業日までに対応' } },
-        { id: '6', type: 'custom', position: { x: 400, y: 650 }, data: { id: '6', shape: 'document', label: '対応記録の作成', description: '対応結果をまとめる' } },
-        { id: '7', type: 'custom', position: { x: 400, y: 800 }, data: { id: '7', shape: 'startEnd', label: 'クローズ', description: '顧客に完了を通知' } },
+        { id: '1', type: 'custom', position: { x: 400, y: 50 }, data: { id: '1', shape: 'startEnd', label: '顧客からの問い合わせ', description: '電話またはメールで受け付け', file: null, onChange: (data) => {} } },
+        { id: '2', type: 'custom', position: { x: 400, y: 200 }, data: { id: '2', shape: 'predefinedProcess', label: '問い合わせ内容の記録', description: 'CRMシステムに入力', file: null, onChange: (data) => {} } },
+        { id: '3', type: 'custom', position: { x: 400, y: 350 }, data: { id: '3', shape: 'diamond', label: '緊急案件か？', description: 'SLA（サービスレベル契約）に基づく', file: null, onChange: (data) => {} } },
+        { id: '4', type: 'custom', position: { x: 150, y: 500 }, data: { id: '4', shape: 'rectangle', label: '担当者へ即時通知', description: 'チャットとメールで通知', file: null, onChange: (data) => {} } },
+        { id: '5', type: 'custom', position: { x: 650, y: 500 }, data: { id: '5', shape: 'rectangle', label: '通常キューに追加', description: '翌営業日までに対応', file: null, onChange: (data) => {} } },
+        { id: '6', type: 'custom', position: { x: 400, y: 650 }, data: { id: '6', shape: 'document', label: '対応記録の作成', description: '対応結果をまとめる', file: null, onChange: (data) => {} } },
+        { id: '7', type: 'custom', position: { x: 400, y: 800 }, data: { id: '7', shape: 'startEnd', label: 'クローズ', description: '顧客に完了を通知', file: null, onChange: (data) => {} } },
       ],
       edges: [
-        { id: 'e1-2', source: '1', target: '2', type: 'step', animated: true },
-        { id: 'e2-3', source: '2', target: '3', type: 'step', animated: true },
-        { id: 'e3-4', source: '3', target: '4', type: 'step', label: 'はい' },
-        { id: 'e3-5', source: '3', target: '5', type: 'step', label: 'いいえ' },
-        { id: 'e4-6', source: '4', target: '6', type: 'step' },
-        { id: 'e5-6', source: '5', target: '6', type: 'step' },
-        { id: 'e6-7', source: '6', target: '7', type: 'step' },
+        { id: 'e1-2', source: '1', target: '2', type: 'step', animated: true, data: { id: 'e1-2' } },
+        { id: 'e2-3', source: '2', target: '3', type: 'step', animated: true, data: { id: 'e2-3' } },
+        { id: 'e3-4', source: '3', target: '4', type: 'step', label: 'はい', data: { id: 'e3-4' } },
+        { id: 'e3-5', source: '3', target: '5', type: 'step', label: 'いいえ', data: { id: 'e3-5' } },
+        { id: 'e4-6', source: '4', target: '6', type: 'step', data: { id: 'e4-6' } },
+        { id: 'e5-6', source: '5', target: '6', type: 'step', data: { id: 'e5-6' } },
+        { id: 'e6-7', source: '6', target: '7', type: 'step', data: { id: 'e6-7' } },
       ],
     };
 
     setFlow(mockApiResponse);
     setIsGenerating(false);
-    // --- End of Mock ---
   };
 
   const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -398,7 +351,6 @@ export default function Home() {
     setInput("");
     setIsLoading(true);
 
-    // バックエンドが設定されていない場合は直接モックレスポンス
     if (!API_BASE_URL) {
       const mockResponse: Message = { 
         text: "現在オフラインモードで動作しています。バックエンドサーバーが利用できないため、実際のAI応答は提供できませんが、フローチャート機能やその他の機能は引き続きご利用いただけます。", 
@@ -420,7 +372,6 @@ export default function Home() {
       setMessages((prev) => [...prev, aiResponse]);
     } catch (error) {
       console.error("Error sending message:", error);
-      // オフラインモード用のモックレスポンス
       const mockResponse: Message = { 
         text: "現在オフラインモードで動作しています。バックエンドサーバーが利用できないため、実際のAI応答は提供できませんが、フローチャート機能やその他の機能は引き続きご利用いただけます。", 
         sender: "ai" 
@@ -432,7 +383,6 @@ export default function Home() {
   };
 
   const handleDownloadCode = () => {
-    if (!generatedCode) return;
     const blob = new Blob([generatedCode.code], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -445,11 +395,9 @@ export default function Home() {
   };
 
   const handleCopyCode = async () => {
-    if (!generatedCode) return;
     await copyToClipboard(generatedCode.code, "コードをクリップボードにコピーしました。");
   };
 
-  // プロジェクトシェア機能
   const generateProjectShareableUrl = () => {
     if (!activeProject) return '';
     
@@ -538,7 +486,6 @@ export default function Home() {
     }
   };
 
-  // Web Share API を使用したネイティブシェア
   const handleNativeShareProject = async () => {
     if (!activeProject) {
       toast({
@@ -550,7 +497,6 @@ export default function Home() {
     }
 
     if (!navigator.share) {
-      // Web Share API がサポートされていない場合はURLコピーにフォールバック
       await handleShareProjectUrl();
       return;
     }
@@ -573,13 +519,11 @@ export default function Home() {
     } catch (error) {
       if (error instanceof Error && error.name !== 'AbortError') {
         console.error('Share failed:', error);
-        // エラーの場合はURLコピーにフォールバック
         await handleShareProjectUrl();
       }
     }
   };
 
-  // プロジェクト設定機能
   const handleOpenSettings = () => {
     if (activeProject) {
       setEditingProjectName(activeProject.name);
@@ -591,7 +535,6 @@ export default function Home() {
   const handleUpdateProject = async () => {
     if (!activeProject) return;
 
-    // バリデーション
     const trimmedName = editingProjectName.trim();
     if (!trimmedName) {
       toast({
@@ -602,7 +545,6 @@ export default function Home() {
       return;
     }
 
-    // バックエンドが設定されていない場合はローカル更新のみ
     if (!API_BASE_URL) {
       const updatedProject = {
         ...activeProject,
@@ -633,7 +575,6 @@ export default function Home() {
       if (response.ok) {
         const updatedProject: Project = await response.json();
         
-        // プロジェクトリストを更新
         setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
         setActiveProject(updatedProject);
         setIsSettingsOpen(false);
@@ -647,7 +588,6 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Failed to update project:", error);
-      // オフラインモードでのフォールバック - ローカルでプロジェクト情報を更新
       const updatedProject: Project = {
         ...activeProject,
         name: trimmedName,
@@ -668,18 +608,17 @@ export default function Home() {
   const handleDeleteProject = async () => {
     if (!activeProject) return;
     
-    const confirmDelete = confirm(`プロジェクト「${activeProject.name}」を削除しますか？この操作は取り消せません。`);
+    const confirmDelete = window.confirm(`プロジェクト「${activeProject.name}」を削除しますか？この操作は取り消せません。`);
     if (!confirmDelete) return;
 
-    // バックエンドが設定されていない場合はローカル削除のみ
     if (!API_BASE_URL) {
       const updatedProjects = projects.filter(p => p.id !== activeProject.id);
       setProjects(updatedProjects);
       
-      // 他のプロジェクトに切り替えまたは新規作成
-      if (updatedProjects.length > 0) {
-        setActiveProject(updatedProjects[0]);
-        loadProjectFlow(updatedProjects[0].id);
+      const nextProject = updatedProjects[0];
+      if (nextProject) {
+        setActiveProject(nextProject);
+        loadProjectFlow(nextProject.id);
       } else {
         await handleCreateProject(true);
       }
@@ -699,14 +638,13 @@ export default function Home() {
       });
       
       if (response.ok) {
-        // プロジェクトリストから削除
         const updatedProjects = projects.filter(p => p.id !== activeProject.id);
         setProjects(updatedProjects);
         
-        // 他のプロジェクトに切り替えまたは新規作成
-        if (updatedProjects.length > 0) {
-          setActiveProject(updatedProjects[0]);
-          loadProjectFlow(updatedProjects[0].id);
+        const nextProject = updatedProjects[0];
+        if (nextProject) {
+          setActiveProject(nextProject);
+          loadProjectFlow(nextProject.id);
         } else {
           await handleCreateProject(true);
         }
@@ -722,14 +660,13 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Failed to delete project:", error);
-      // オフラインモードでのフォールバック - ローカルでプロジェクトを削除
       const updatedProjects = projects.filter(p => p.id !== activeProject.id);
       setProjects(updatedProjects);
       
-      // 他のプロジェクトに切り替えまたは新規作成
-      if (updatedProjects.length > 0) {
-        setActiveProject(updatedProjects[0]);
-        loadProjectFlow(updatedProjects[0].id);
+      const nextProject = updatedProjects[0];
+      if (nextProject) {
+        setActiveProject(nextProject);
+        loadProjectFlow(nextProject.id);
       } else {
         await handleCreateProject(true);
       }
@@ -745,8 +682,24 @@ export default function Home() {
 
   return (
     <TooltipProvider>
+      <div style={{
+        position: 'fixed',
+        top: '60px',
+        right: '10px',
+        backgroundColor: 'rgba(255, 0, 0, 0.8)',
+        color: 'white',
+        padding: '8px',
+        zIndex: 9999,
+        fontSize: '12px',
+        borderRadius: '5px',
+        fontFamily: 'monospace',
+        pointerEvents: 'none',
+      }}>
+        <p>isMobile: <strong>{isMobile.toString()}</strong></p>
+        <p>isSidebarOpen: <strong>{isSidebarOpen.toString()}</strong></p>
+      </div>
+      
       <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
-        {/* Mobile sidebar overlay */}
         {isMobile && isSidebarOpen && (
           <div 
             className="fixed inset-0 bg-black/50 z-20" 
@@ -754,7 +707,6 @@ export default function Home() {
           />
         )}
         
-        {/* Sidebar */}
         <aside 
           className={cn(
             "w-72 flex flex-col border-r bg-muted/20 p-4 transition-transform duration-300 ease-in-out z-30",
@@ -839,22 +791,25 @@ export default function Home() {
             )}
             
             <h1 
-              className="text-xl font-semibold truncate cursor-pointer"
+              className={cn(
+                "font-semibold truncate cursor-pointer flex-1 min-w-0",
+                isMobile ? "text-lg" : "text-xl"
+              )}
               onClick={() => setMainView('chat')}
             >
               {activeProject ? activeProject.name : "プロジェクトを選択してください"}
             </h1>
-            <div className="flex items-center gap-1 md:gap-2">
+            <div className={cn("flex items-center", isMobile ? "gap-1" : "gap-2")}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
                     variant={mainView === 'chat' ? 'default' : 'outline'}
-                    size="icon" 
-                    className="h-8 w-8 md:h-8 md:w-8" 
+                    size={isMobile ? "icon" : "default"}
+                    className={isMobile ? "h-8 w-8" : ""}
                     onClick={() => setMainView('chat')}
                   >
-                    <MessageSquare className="h-4 w-4" />
-                    <span className="sr-only">Chat</span>
+                    <MessageSquare className={cn("h-4 w-4", !isMobile && "mr-2")} />
+                    {!isMobile && <span>チャット</span>}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>チャット</TooltipContent>
@@ -863,12 +818,12 @@ export default function Home() {
                 <TooltipTrigger asChild>
                   <Button 
                     variant={mainView === 'flow' ? 'default' : 'outline'}
-                    size="icon" 
-                    className="h-8 w-8 md:h-8 md:w-8" 
+                    size={isMobile ? "icon" : "default"}
+                    className={isMobile ? "h-8 w-8" : ""}
                     onClick={() => setMainView('flow')}
                   >
-                    <Workflow className="h-4 w-4" />
-                    <span className="sr-only">Flowchart</span>
+                    <Workflow className={cn("h-4 w-4", !isMobile && "mr-2")} />
+                    {!isMobile && <span>フロー</span>}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>フローチャート</TooltipContent>
@@ -877,60 +832,66 @@ export default function Home() {
                 <TooltipTrigger asChild>
                   <Button 
                     variant={mainView === 'code' ? 'default' : 'outline'}
-                    size="icon" 
-                    className="h-8 w-8 md:h-8 md:w-8" 
+                    size={isMobile ? "icon" : "default"}
+                    className={isMobile ? "h-8 w-8" : ""}
                     onClick={() => setMainView('code')}
                   >
-                    <FileCode className="h-4 w-4" />
-                    <span className="sr-only">Code</span>
+                    <FileCode className={cn("h-4 w-4", !isMobile && "mr-2")} />
+                    {!isMobile && <span>コード</span>}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>コードを表示</TooltipContent>
               </Tooltip>
+              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-8 w-8 md:h-8 md:w-8">
+                  <Button variant="outline" size="icon" className={isMobile ? "h-8 w-8" : ""}>
                     <Share2 className="h-4 w-4" />
                     <span className="sr-only">Share</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
+                <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={handleNativeShareProject}>
                     <Share2 className="h-4 w-4 mr-2" />
                     プロジェクトをシェア
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleShareProjectUrl}>
-                    <Link className="h-4 w-4 mr-2" />
-                    URLをコピー
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleShareProjectEmbed}>
-                    <Code className="h-4 w-4 mr-2" />
-                    埋め込みコード
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleShareProjectSocial('twitter')}>
-                    <Twitter className="h-4 w-4 mr-2" />
-                    Twitter
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleShareProjectSocial('facebook')}>
-                    <Facebook className="h-4 w-4 mr-2" />
-                    Facebook
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleShareProjectSocial('linkedin')}>
-                    <Linkedin className="h-4 w-4 mr-2" />
-                    LinkedIn
-                  </DropdownMenuItem>
+                  {!isMobile && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleShareProjectUrl}>
+                        <Link className="h-4 w-4 mr-2" />
+                        URLをコピー
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleShareProjectEmbed}>
+                        <Code className="h-4 w-4 mr-2" />
+                        埋め込みコード
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleShareProjectSocial('twitter')}>
+                        <Twitter className="h-4 w-4 mr-2" />
+                        Twitter
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleShareProjectSocial('facebook')}>
+                        <Facebook className="h-4 w-4 mr-2" />
+                        Facebook
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleShareProjectSocial('linkedin')}>
+                        <Linkedin className="h-4 w-4 mr-2" />
+                        LinkedIn
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
+              
               <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-8 w-8 md:h-8 md:w-8" onClick={handleOpenSettings}>
+                  <Button variant="outline" size="icon" className={isMobile ? "h-8 w-8" : ""} onClick={handleOpenSettings}>
                     <Settings className="h-4 w-4" />
                     <span className="sr-only">Settings</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className={cn("sm:max-w-[500px]", isMobile && "w-[90vw]")}>
                   <DialogHeader>
                     <DialogTitle>プロジェクト設定</DialogTitle>
                     <DialogDescription>
@@ -991,36 +952,44 @@ export default function Home() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-              <div className="hidden md:flex md:gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={() => undo()} disabled={pastStates.length === 0}>
-                      <Undo className="h-4 w-4" />
-                      <span className="sr-only">元に戻す</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>元に戻す</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={() => redo()} disabled={futureStates.length === 0}>
-                      <Redo className="h-4 w-4" />
-                      <span className="sr-only">やり直す</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>やり直す</TooltipContent>
-                </Tooltip>
-              </div>
+              
+              {!isMobile && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" onClick={() => undo()} disabled={pastStates.length === 0}>
+                        <Undo className="h-4 w-4" />
+                        <span className="sr-only">元に戻す</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>元に戻す</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" onClick={() => redo()} disabled={futureStates.length === 0}>
+                        <Redo className="h-4 w-4" />
+                        <span className="sr-only">やり直す</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>やり直す</TooltipContent>
+                  </Tooltip>
+                </>
+              )}
+              
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={handleGenerateFlow} disabled={isGenerating} className="hidden sm:flex">
+                  <Button 
+                    onClick={handleGenerateFlow} 
+                    disabled={isGenerating}
+                    size={isMobile ? "icon" : "default"}
+                    className={isMobile ? "h-8 w-8" : ""}
+                  >
                     {isGenerating ? (
-                      <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                      <LoaderCircle className={cn("h-4 w-4 animate-spin", !isMobile && "mr-2")} />
                     ) : (
-                      <MessageSquarePlus className="mr-2 h-4 w-4" />
+                      <MessageSquarePlus className={cn("h-4 w-4", !isMobile && "mr-2")} />
                     )}
-                    <span className="hidden lg:inline">フロー生成</span>
-                    <span className="lg:hidden">生成</span>
+                    {!isMobile && "フロー生成"}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1031,11 +1000,13 @@ export default function Home() {
           </header>
 
           <div className="flex-1 overflow-y-auto">
-
             {mainView === 'flow' ? (
               <ErrorBoundary>
-                {/* Desktop layout */}
-                <div className="hidden md:block h-full">
+                {isMobile ? (
+                  <div className="h-full">
+                    <Flowchart />
+                  </div>
+                ) : (
                   <ResizablePanelGroup direction="horizontal" className="h-full w-full">
                     <ResizablePanel defaultSize={20} minSize={15}>
                       <ErrorBoundary>
@@ -1059,32 +1030,30 @@ export default function Home() {
                        </ResizablePanelGroup>
                     </ResizablePanel>
                   </ResizablePanelGroup>
-                </div>
-                
-                {/* Mobile layout */}
-                <div className="md:hidden h-full flex flex-col">
-                  <div className="flex-1">
-                    <ErrorBoundary>
-                      <Flowchart />
-                    </ErrorBoundary>
-                  </div>
-                </div>
+                )}
               </ErrorBoundary>
             ) : mainView === 'chat' ? (
-              <main className="h-full p-3 md:p-6">
+              <main className={cn("h-full", isMobile ? "p-3" : "p-6")}>
                 <ScrollArea className="h-full" ref={scrollAreaRef}>
-                  <div className="space-y-4 md:space-y-6">
+                  <div className={cn("space-y-4", !isMobile && "space-y-6")}>
                     {messages.map((msg, index) => (
                       <div
                         key={index}
-                        className={cn("flex items-start gap-3 md:gap-4", msg.sender === "user" ? "flex-row-reverse" : "")}
+                        className={cn(
+                          "flex items-start",
+                          isMobile ? "gap-3" : "gap-4",
+                          msg.sender === "user" ? "flex-row-reverse" : ""
+                        )}
                       >
-                        <Avatar className="h-8 w-8 md:h-9 md:w-9 flex-shrink-0">
-                          <AvatarFallback>{msg.sender === 'ai' ? <Bot size={18} /> : <User size={18} />}</AvatarFallback>
+                        <Avatar className={cn(isMobile ? "h-8 w-8" : "h-9 w-9", "flex-shrink-0")}>
+                          <AvatarFallback>
+                            {msg.sender === 'ai' ? <Bot size={isMobile ? 18 : 20} /> : <User size={isMobile ? 18 : 20} />}
+                          </AvatarFallback>
                         </Avatar>
                         <div
                           className={cn(
-                            "max-w-[85%] sm:max-w-lg md:max-w-2xl rounded-lg p-3 text-sm md:text-base prose",
+                            "rounded-lg p-3 prose",
+                            isMobile ? "text-sm max-w-[85%]" : "text-base max-w-2xl",
                             msg.sender === "user" 
                               ? "bg-primary text-primary-foreground" 
                               : "bg-muted dark:prose-invert"
@@ -1097,9 +1066,9 @@ export default function Home() {
                       </div>
                     ))}
                     {isLoading && messages.length > 0 && messages[messages.length-1].sender === 'user' && (
-                      <div className="flex items-start gap-3 md:gap-4">
-                        <Avatar className="h-8 w-8 md:h-9 md:w-9 flex-shrink-0">
-                          <AvatarFallback><Bot size={18} /></AvatarFallback>
+                      <div className={cn("flex items-start", isMobile ? "gap-3" : "gap-4")}>
+                        <Avatar className={cn(isMobile ? "h-8 w-8" : "h-9 w-9", "flex-shrink-0")}>
+                          <AvatarFallback><Bot size={isMobile ? 18 : 20} /></AvatarFallback>
                         </Avatar>
                         <div className="flex items-center space-x-2">
                           <LoaderCircle className="animate-spin h-5 w-5 text-muted-foreground" />
@@ -1112,62 +1081,58 @@ export default function Home() {
               </main>
             ) : mainView === 'code' ? (
               <div className="flex-1 overflow-y-auto">
-                <div className="max-w-6xl mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
-                  {/* ヘッダー */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className={cn("mx-auto space-y-4", isMobile ? "p-3 max-w-full" : "p-6 max-w-6xl space-y-6")}>
+                  <div className={cn("flex", isMobile ? "flex-col gap-3" : "items-center justify-between")}>
                     <div>
-                      <h1 className="text-xl md:text-2xl font-semibold">生成されたコード</h1>
+                      <h1 className={cn("font-semibold", isMobile ? "text-xl" : "text-2xl")}>生成されたコード</h1>
                       <p className="text-sm text-muted-foreground mt-1">{generatedCode.filename}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="outline" onClick={handleCopyCode} size="sm">
-                        <Copy className="h-4 w-4 md:mr-2" />
-                        <span className="hidden md:inline">コピー</span>
+                        <Copy className={cn("h-4 w-4", !isMobile && "mr-2")} />
+                        {!isMobile && "コピー"}
                       </Button>
                       <Button onClick={handleDownloadCode} size="sm">
-                        <Download className="h-4 w-4 md:mr-2" />
-                        <span className="hidden md:inline">ダウンロード</span>
+                        <Download className={cn("h-4 w-4", !isMobile && "mr-2")} />
+                        {!isMobile && "ダウンロード"}
                       </Button>
                     </div>
                   </div>
 
-                  {/* メインコンテンツ */}
-                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
+                  <div className={cn("grid gap-4", !isMobile && "grid-cols-4 gap-6")}>
                     
-                    {/* サイドパネル */}
-                    <div className="lg:col-span-1 space-y-4 md:space-y-6">
-                      {/* コード説明 */}
-                      <div>
-                        <h3 className="text-sm font-medium mb-3">説明</h3>
-                        <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {generatedCode.explanation}
-                          </ReactMarkdown>
-                        </div>
-                      </div>
-
-                      {/* ファイル情報 */}
-                      <div>
-                        <h3 className="text-sm font-medium mb-3">ファイル情報</h3>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">言語</span>
-                            <span>VBA</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">行数</span>
-                            <span>{generatedCode.code.split('\n').length}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">文字数</span>
-                            <span>{generatedCode.code.length}</span>
+                    {!isMobile && (
+                      <div className="col-span-1 space-y-6">
+                        <div>
+                          <h3 className="text-sm font-medium mb-3">説明</h3>
+                          <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {generatedCode.explanation}
+                            </ReactMarkdown>
                           </div>
                         </div>
-                      </div>
-                    </div>
 
-                    {/* コードエリア */}
-                    <div className="lg:col-span-3">
+                        <div>
+                          <h3 className="text-sm font-medium mb-3">ファイル情報</h3>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">言語</span>
+                              <span>VBA</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">行数</span>
+                              <span>{generatedCode.code.split('\n').length}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">文字数</span>
+                              <span>{generatedCode.code.length}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className={cn(isMobile ? "" : "col-span-3")}>
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-3">
                           <CardTitle className="text-base">{generatedCode.filename}</CardTitle>
@@ -1182,12 +1147,15 @@ export default function Home() {
                         </CardHeader>
                         <Separator />
                         <CardContent className="p-0">
-                          <div className="relative max-h-[400px] md:max-h-[600px] overflow-auto">
-                            <pre className="p-3 md:p-4 text-xs md:text-sm font-mono leading-relaxed">
+                          <div className={cn("relative overflow-auto", isMobile ? "max-h-[400px]" : "max-h-[600px]")}>
+                            <pre className={cn("font-mono leading-relaxed", isMobile ? "p-3 text-xs" : "p-4 text-sm")}>
                               <code>
                                 {generatedCode.code.split('\n').map((line, index) => (
                                   <div key={index} className="flex">
-                                    <span className="select-none w-6 md:w-8 text-right pr-2 md:pr-3 text-muted-foreground/50 text-xs leading-relaxed">
+                                    <span className={cn(
+                                      "select-none text-right pr-3 text-muted-foreground/50 text-xs leading-relaxed",
+                                      isMobile ? "w-6" : "w-8"
+                                    )}>
                                       {index + 1}
                                     </span>
                                     <span className="flex-1 break-all">{line || ' '}</span>
@@ -1209,20 +1177,29 @@ export default function Home() {
             )}
           </div>
 
-          <footer className="sticky bottom-0 border-t bg-background/95 p-3 md:p-4 backdrop-blur-sm">
+          <footer className={cn(
+            "sticky bottom-0 border-t bg-background/95 backdrop-blur-sm",
+            isMobile ? "p-3" : "p-4"
+          )}>
             <div className="relative">
               <form onSubmit={handleSendMessage}>
                 <Input
                   placeholder="メッセージを送信..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  className="pr-12 md:pr-16 h-10 md:h-12 text-sm md:text-base font-chat"
+                  className={cn(
+                    "pr-12 font-chat",
+                    isMobile ? "h-10 text-sm" : "h-12 text-base"
+                  )}
                   disabled={isLoading}
                 />
                 <Button
                   type="submit"
                   size="icon"
-                  className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                  className={cn(
+                    "absolute top-1/2 -translate-y-1/2",
+                    isMobile ? "right-1 h-8 w-8" : "right-2 h-8 w-8"
+                  )}
                   disabled={isLoading || input.trim() === ""}
                 >
                   <CornerDownLeft className="h-4 w-4" />
