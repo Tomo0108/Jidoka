@@ -1,35 +1,43 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react'
 
 /**
- * メディアクエリに一致するかどうかを判定するカスタムフック（SSR/ハイドレーション対応）
- * @param query - ' (max-width: 768px)' のようなメディアクエリ文字列
- * @returns メディアクエリに一致するかどうかの真偽値
+ * A hook that provides a boolean value indicating whether a media query is matched.
+ * It is SSR-safe and handles hydration mismatches.
+ *
+ * @param query The media query to match.
+ * @returns `true` if the media query is matched, `false` otherwise.
  */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
+  const [matches, setMatches] = useState(false)
 
   useEffect(() => {
-    const media = window.matchMedia(query);
-    if (media.matches !== matches) {
-      setMatches(media.matches);
-    }
-    const listener = () => setMatches(media.matches);
+    const media = window.matchMedia(query)
     
-    // Safari < 14 and other older browsers
-    if (media.addEventListener) {
-      media.addEventListener('change', listener);
-    } else {
-      media.addListener(listener);
+    // Set the initial state
+    if (media.matches !== matches) {
+      setMatches(media.matches)
     }
 
-    return () => {
-      if (media.removeEventListener) {
-        media.removeEventListener('change', listener);
-      } else {
-        media.removeListener(listener);
-      }
-    };
-  }, [matches, query]);
+    const listener = () => {
+      setMatches(media.matches)
+    }
 
-  return matches;
+    // Add listener
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', listener)
+    } else {
+      media.addListener(listener) // For older browsers
+    }
+
+    // Cleanup listener on unmount
+    return () => {
+      if (typeof media.removeEventListener === 'function') {
+        media.removeEventListener('change', listener)
+      } else {
+        media.removeListener(listener) // For older browsers
+      }
+    }
+  }, [matches, query])
+
+  return matches
 } 
