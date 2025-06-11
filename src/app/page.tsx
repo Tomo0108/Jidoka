@@ -1,5 +1,6 @@
 "use client";
 
+// Vercelへのデプロイを再トリガーするためのコメント
 import { useState, useEffect, useRef, useCallback } from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -56,6 +57,7 @@ interface Project {
   description?: string;
 }
 
+// Vercelへのデプロイを再トリガーするためのコメント
 export default function Home() {
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
