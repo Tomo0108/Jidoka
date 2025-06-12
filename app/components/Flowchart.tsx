@@ -23,7 +23,6 @@ import { FlowchartToolbar } from "./FlowchartToolbar";
 import CustomNode from "./CustomNode";
 import { ErrorBoundary } from "./ErrorBoundary";
 // import { SmartEdge } from '@tisoap/react-flow-smart-edge';
-import { FlowchartToolbar } from '@/components/FlowchartToolbar';
 import { NodeShape } from "../lib/types";
 import { BackgroundVariant } from '@reactflow/background';
 
