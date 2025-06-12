@@ -18,12 +18,10 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { useFlowStore } from "../hooks/useFlowStore";
 import { FlowchartToolbar } from "./FlowchartToolbar";
-import { CustomNode } from "./CustomNode";
+import CustomNode from "./CustomNode";
 import { ErrorBoundary } from "./ErrorBoundary";
 // import { SmartEdge } from '@tisoap/react-flow-smart-edge';
 import { FlowchartToolbar } from '@/components/FlowchartToolbar';
-// Import custom nodes
-import CustomNode from '@/components/CustomNode';
 import { NodeShape } from "../lib/types";
 import { BackgroundVariant } from '@reactflow/background';
 
