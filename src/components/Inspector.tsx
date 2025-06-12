@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useFlowStore } from '@/hooks/useFlowStore';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -15,8 +15,7 @@ import {
   NodeShape, 
   Priority, 
   NodeStatus, 
-  BusinessAttributes,
-  ValidationError 
+  BusinessAttributes
 } from '@/lib/types';
 import { 
   ChevronDown, 
@@ -62,7 +61,6 @@ export function Inspector() {
   const validationErrors = useFlowStore(state => state.validationErrors);
   
   const [isBusinessAttributesOpen, setIsBusinessAttributesOpen] = useState(true);
-  const [isValidationOpen, setIsValidationOpen] = useState(true);
   const [tagInput, setTagInput] = useState('');
   
   const selectedNode = selectedNodeId ? nodes.find(node => node.id === selectedNodeId) : null;
@@ -104,7 +102,7 @@ export function Inspector() {
   };
 
   // 業務属性の更新
-  const updateBusinessAttribute = (key: keyof BusinessAttributes, value: any) => {
+  const updateBusinessAttribute = (key: keyof BusinessAttributes, value: string | number | string[] | undefined) => {
     const newBusinessAttributes = { ...businessAttributes, [key]: value };
     updateNodeData(selectedNode.id, { businessAttributes: newBusinessAttributes });
   };
@@ -370,9 +368,9 @@ export function Inspector() {
 
         {/* バリデーションエラー */}
         {nodeErrors.length > 0 && (
-          <Collapsible open={isValidationOpen} onOpenChange={setIsValidationOpen}>
+          <Collapsible open={isBusinessAttributesOpen} onOpenChange={setIsBusinessAttributesOpen}>
             <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary">
-              {isValidationOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              {isBusinessAttributesOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               <AlertTriangle className="h-4 w-4 text-orange-500" />
               検証結果 ({nodeErrors.length})
             </CollapsibleTrigger>

@@ -1,33 +1,23 @@
 "use client";
 
-import React, { useCallback, useRef, DragEvent, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import ReactFlow, {
   MiniMap,
   Controls,
   Background,
   ReactFlowProvider,
   Node,
-  // Custom edge types
-  StraightEdge,
-  StepEdge,
-  SmoothStepEdge,
-  BezierEdge,
   ReactFlowInstance,
-  OnConnect,
-  applyNodeChanges,
-  applyEdgeChanges,
+  MarkerType,
 } from 'reactflow';
 // import { SmartEdge } from '@tisoap/react-flow-smart-edge';
-import { Button } from '@/components/ui/button';
-
-import { useFlowStore, RFState } from '@/hooks/useFlowStore';
+import { useFlowStore } from '@/hooks/useFlowStore';
 import { FlowchartToolbar } from '@/components/FlowchartToolbar';
-
 // Import custom nodes
 import CustomNode from '@/components/CustomNode';
-
 import 'reactflow/dist/style.css';
 import { NodeShape } from '@/lib/types';
+import { BackgroundVariant } from '@reactflow/background';
 
 // Define custom node and edge types
 const nodeTypes = {
@@ -118,7 +108,7 @@ function FlowchartCanvas() {
             style: { strokeWidth: 2, stroke: '#94a3b8' },
             type: 'step',
             markerEnd: {
-              type: 'arrowclosed',
+              type: MarkerType.ArrowClosed,
               color: '#94a3b8',
             },
           }}
@@ -127,7 +117,7 @@ function FlowchartCanvas() {
         >
           <Controls />
           <MiniMap />
-          <Background variant="dots" gap={12} size={1} />
+          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
         </ReactFlow>
       </div>
 

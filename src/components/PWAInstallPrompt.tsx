@@ -24,7 +24,7 @@ export function PWAInstallPrompt() {
       }
       
       // iOS Safari でのインストール確認
-      if ((window.navigator as any).standalone) {
+      if ((window.navigator as Navigator & { standalone?: boolean }).standalone) {
         setIsInstalled(true);
         return;
       }

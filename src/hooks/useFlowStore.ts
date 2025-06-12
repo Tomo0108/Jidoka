@@ -7,9 +7,6 @@ import {
   Node,
   NodeChange,
   addEdge,
-  OnNodesChange,
-  OnEdgesChange,
-  OnConnect,
   applyNodeChanges,
   applyEdgeChanges,
 } from 'reactflow';

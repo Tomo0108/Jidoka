@@ -13,7 +13,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useFlowStore } from '@/hooks/useFlowStore';
 import { NodeShape } from '@/lib/types';
 import { 
-  Shapes, 
   HardDriveUpload,
   RectangleHorizontal,
   Diamond,
@@ -24,7 +23,6 @@ import {
   Replace,
   Link2
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const nodeShapes = [

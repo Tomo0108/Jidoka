@@ -1,5 +1,5 @@
 import { Node, Edge } from 'reactflow';
-import { CustomNodeData, ValidationError, NodeShape } from './types';
+import { CustomNodeData, ValidationError } from './types';
 
 export class FlowchartValidator {
   /**
@@ -15,7 +15,7 @@ export class FlowchartValidator {
     errors.push(...this.validateNodes(nodes));
     errors.push(...this.validateEdges(nodes, edges));
     errors.push(...this.validateFlow(nodes, edges));
-    errors.push(...this.validateBusinessRules(nodes, edges));
+    errors.push(...this.validateBusinessRules(nodes));
 
     return errors;
   }
@@ -51,7 +51,7 @@ export class FlowchartValidator {
 
       // 業務属性のバリデーション
       if (data.businessAttributes) {
-        const { estimatedTime, priority, dueDate } = data.businessAttributes;
+        const { estimatedTime, dueDate } = data.businessAttributes;
 
         // 想定時間のチェック
         if (estimatedTime !== undefined && estimatedTime <= 0) {
@@ -209,8 +209,7 @@ export class FlowchartValidator {
    * 業務ルールのバリデーション
    */
   private static validateBusinessRules(
-    nodes: Node<CustomNodeData>[], 
-    edges: Edge[]
+    nodes: Node<CustomNodeData>[]
   ): ValidationError[] {
     const errors: ValidationError[] = [];
 
