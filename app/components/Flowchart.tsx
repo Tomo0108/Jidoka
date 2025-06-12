@@ -12,6 +12,8 @@ import ReactFlow, {
   useEdgesState,
   useNodesState,
   useReactFlow,
+  ReactFlowInstance,
+  MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useFlowStore } from "../hooks/useFlowStore";
@@ -22,7 +24,7 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { FlowchartToolbar } from '@/components/FlowchartToolbar';
 // Import custom nodes
 import CustomNode from '@/components/CustomNode';
-import { NodeShape } from '@/lib/types';
+import { NodeShape } from "../lib/types";
 import { BackgroundVariant } from '@reactflow/background';
 
 // Define custom node and edge types
