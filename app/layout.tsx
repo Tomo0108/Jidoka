@@ -4,13 +4,13 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const smartFont = localFont({
-  src: "../public/font/Smartfont_UI.otf",
-  display: "swap",
-  variable: "--font-sans",
-});
+const inter = Inter({ subsets: ["latin"] });
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-chat" });
+const smartFont = localFont({
+  src: "./font/Smartfont_UI.otf",
+  variable: '--font-smart',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: "Jido-ka",

@@ -1,21 +1,27 @@
 "use client";
 
-import React, { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
-  MiniMap,
-  Controls,
   Background,
-  ReactFlowProvider,
+  Controls,
+  Edge,
+  EdgeTypes,
   Node,
-  ReactFlowInstance,
-  MarkerType,
-} from 'reactflow';
+  NodeTypes,
+  Panel,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
+} from "reactflow";
+import "reactflow/dist/style.css";
+import { useFlowStore } from "../hooks/useFlowStore";
+import { FlowchartToolbar } from "./FlowchartToolbar";
+import { CustomNode } from "./CustomNode";
+import { ErrorBoundary } from "./ErrorBoundary";
 // import { SmartEdge } from '@tisoap/react-flow-smart-edge';
-import { useFlowStore } from '@/hooks/useFlowStore';
 import { FlowchartToolbar } from '@/components/FlowchartToolbar';
 // Import custom nodes
 import CustomNode from '@/components/CustomNode';
-import 'reactflow/dist/style.css';
 import { NodeShape } from '@/lib/types';
 import { BackgroundVariant } from '@reactflow/background';
 
