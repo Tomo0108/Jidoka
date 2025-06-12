@@ -1,8 +1,8 @@
 "use client";
 
-import { Flowchart } from '@/components/Flowchart';
-import { Inspector } from '@/components/Inspector';
-import { Toaster } from '@/components/ui/toaster';
+import { Flowchart } from '../components/Flowchart';
+import { Inspector } from '../components/Inspector';
+import { Toaster } from '../components/ui/toaster';
 
 export default function FlowPage() {
   return (
