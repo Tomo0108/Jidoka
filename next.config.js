@@ -8,9 +8,7 @@ const nextConfig = {
   },
   images: {
     unoptimized: true
-  },
-  output: 'standalone',
-  distDir: 'src/.next'
+  }
 }
 
 module.exports = nextConfig
