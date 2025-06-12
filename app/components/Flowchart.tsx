@@ -14,6 +14,8 @@ import ReactFlow, {
   useReactFlow,
   ReactFlowInstance,
   MarkerType,
+  MiniMap,
+  ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useFlowStore } from "../hooks/useFlowStore";
