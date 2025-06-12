@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const inter = Inter({ subsets: ["latin"] });
 
 const smartFont = localFont({
-  src: "../public/font/Smartfont_UI.otf",
+  src: "../../public/font/Smartfont_UI.otf",
   variable: '--font-smart',
   display: 'swap',
 });
