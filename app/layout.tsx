@@ -1,16 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-
-const inter = Inter({ subsets: ["latin"] });
-
-const smartFont = localFont({
-  src: "../../public/font/Smartfont_UI.otf",
-  variable: '--font-smart',
-  display: 'swap',
-});
+import { StagewiseToolbar } from "@stagewise/toolbar-next";
+import { ReactPlugin } from "@stagewise-plugins/react";
 
 export const metadata: Metadata = {
   title: "Jido-ka",
@@ -58,10 +50,15 @@ export default function RootLayout({
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
-          smartFont.variable,
-          inter.variable
+          "font-smart",
+          "font-inter"
         )}
       >
+        <StagewiseToolbar
+          config={{
+            plugins: [ReactPlugin],
+          }}
+        />
         {children}
       </body>
     </html>

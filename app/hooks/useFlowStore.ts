@@ -85,6 +85,58 @@ const initialMetadata: FlowchartMetadata = {
   approvalStatus: 'draft'
 };
 
+// クリティカルパス分析関数
+const getCriticalPath = (nodes: Node<CustomNodeData>[], edges: Edge<CustomEdgeData>[]): string[] => {
+  if (nodes.length === 0) return [];
+  
+  // 開始ノードを探す
+  const startNodes = nodes.filter(node => 
+    !edges.some(edge => edge.target === node.id)
+  );
+  
+  if (startNodes.length === 0) return [];
+  
+  // 最も時間がかかるパスを計算（簡易版）
+  const visited = new Set<string>();
+  const path: string[] = [];
+  
+  const dfs = (nodeId: string): number => {
+    if (visited.has(nodeId)) return 0;
+    visited.add(nodeId);
+    path.push(nodeId);
+    
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return 0;
+    
+    const time = node.data.businessAttributes?.estimatedTime || 0;
+    const outgoingEdges = edges.filter(edge => edge.source === nodeId);
+    
+    if (outgoingEdges.length === 0) {
+      return time;
+    }
+    
+    const maxChildTime = Math.max(...outgoingEdges.map(edge => dfs(edge.target)));
+    return time + maxChildTime;
+  };
+  
+  // 各開始ノードから計算し、最も時間がかかるパスを選択
+  let maxTime = 0;
+  let criticalPath: string[] = [];
+  
+  startNodes.forEach(startNode => {
+    visited.clear();
+    const currentPath: string[] = [];
+    const time = dfs(startNode.id);
+    
+    if (time > maxTime) {
+      maxTime = time;
+      criticalPath = [...currentPath];
+    }
+  });
+  
+  return criticalPath;
+};
+
 const useFlowStore = create(
   temporal<RFState>(
     (set, get) => ({
@@ -153,6 +205,8 @@ const useFlowStore = create(
           ...connection,
           id: nanoid(),
           type: get().activeEdgeType,
+          source: String(connection.source),
+          target: String(connection.target),
           data: {
             id: nanoid(),
             label: '',
@@ -160,12 +214,9 @@ const useFlowStore = create(
             description: ''
           }
         };
-        
         set({
           edges: addEdge(newEdge, get().edges),
         });
-        
-        // メタデータの更新
         get().updateMetadata({ lastModified: new Date() });
       },
       
@@ -237,15 +288,29 @@ const useFlowStore = create(
             onChange: (data: Partial<CustomNodeData>) => get().updateNodeData(node.id, data),
           },
         }));
-        set({ nodes: newNodes, edges });
-        
-        // バリデーション実行
+        const newEdges = edges.map(edge => ({
+          ...edge,
+          source: String(edge.source),
+          target: String(edge.target),
+          data: edge.data && edge.data.id ? {
+            id: edge.data.id,
+            label: edge.data.label || '',
+            condition: edge.data.condition || '',
+            probability: edge.data.probability ?? 0,
+            description: edge.data.description || ''
+          } : {
+            id: nanoid(),
+            label: '',
+            condition: '',
+            probability: 0,
+            description: ''
+          }
+        }));
+        set({ nodes: newNodes, edges: newEdges });
         if (get().isValidationEnabled) {
-          const errors = FlowchartValidator.validateFlowchart(newNodes, edges);
+          const errors = FlowchartValidator.validateFlowchart(newNodes, newEdges);
           set({ validationErrors: errors });
         }
-        
-        // メタデータの更新
         get().updateMetadata({ lastModified: new Date() });
       },
     
@@ -305,7 +370,7 @@ const useFlowStore = create(
           totalEdges: edges.length,
           estimatedTotalTime,
           completionRate,
-          criticalPath: [] // TODO: クリティカルパス分析を実装
+          criticalPath: getCriticalPath(nodes, edges)
         };
       },
       
@@ -365,10 +430,7 @@ const useFlowStore = create(
       }
     }),
     {
-      partialize: (state) => {
-        const { activeEdgeType, isLoading, ...rest } = state;
-        return rest;
-      },
+      partialize: (state) => state,
     }
   )
 );

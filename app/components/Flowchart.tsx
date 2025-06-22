@@ -4,14 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
-  Edge,
-  EdgeTypes,
   Node,
-  NodeTypes,
-  Panel,
-  useEdgesState,
-  useNodesState,
-  useReactFlow,
   ReactFlowInstance,
   MarkerType,
   MiniMap,
@@ -21,7 +14,6 @@ import "reactflow/dist/style.css";
 import { useFlowStore } from "../hooks/useFlowStore";
 import { FlowchartToolbar } from "./FlowchartToolbar";
 import CustomNode from "./CustomNode";
-import { ErrorBoundary } from "./ErrorBoundary";
 // import { SmartEdge } from '@tisoap/react-flow-smart-edge';
 import { NodeShape } from "../lib/types";
 import { BackgroundVariant } from '@reactflow/background';
@@ -87,10 +79,13 @@ function FlowchartCanvas() {
     setSelectedNodeId(null);
   }, [setSelectedNodeId]);
 
+  // 開発モードかどうかを判定
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   return (
     <div className="flex flex-col h-full">
-      {/* ツールバー */}
-      <FlowchartToolbar />
+      {/* ツールバー（開発モードでのみ表示） */}
+      {isDevelopment && <FlowchartToolbar />}
       
       {/* フローチャートキャンバス */}
       <div 

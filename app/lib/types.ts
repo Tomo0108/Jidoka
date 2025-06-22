@@ -45,7 +45,7 @@ export interface CustomNodeData {
 
 // カスタムエッジデータの型定義
 export interface CustomEdgeData {
-  id: string;
+  id?: string;
   label?: string;
   condition?: string;      // 条件分岐の場合の条件
   probability?: number;    // 発生確率（0-100）
