@@ -11,11 +11,11 @@ import ReactFlow, {
   ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { useFlowStore } from "../hooks/useFlowStore";
+import { useFlowStore } from "../../hooks/useFlowStore";
 import { FlowchartToolbar } from "./FlowchartToolbar";
 import CustomNode from "./CustomNode";
 // import { SmartEdge } from '@tisoap/react-flow-smart-edge';
-import { NodeShape } from "../lib/types";
+import { NodeShape } from "../../lib/types";
 import { BackgroundVariant } from '@reactflow/background';
 
 // Define custom node and edge types
