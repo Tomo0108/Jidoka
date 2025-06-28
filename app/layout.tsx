@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { StagewiseToolbar } from "@stagewise/toolbar-next";
-import { ReactPlugin } from "@stagewise-plugins/react";
+import { StagewiseWrapper } from "@/components/StagewiseWrapper";
 
 export const metadata: Metadata = {
   title: "Jido-ka",
@@ -54,11 +53,7 @@ export default function RootLayout({
           "font-inter"
         )}
       >
-        <StagewiseToolbar
-          config={{
-            plugins: [ReactPlugin],
-          }}
-        />
+        <StagewiseWrapper />
         {children}
       </body>
     </html>
